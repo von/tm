@@ -51,8 +51,10 @@ function tm_new_session()
 #
 # Main
 
+set -e  # Exit on error
+set -u  # Use of unitialized variable is an error
 
-case ${1} in
+case ${1:-""} in
     -ls)
         ls -1 ${TM_SESSION_PATH} | grep -v "~$"
         exit 0
