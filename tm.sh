@@ -34,6 +34,7 @@ function tm_attach_existing()
 
 function tm_new_session()
 {
+    local _session=${1}
     local _startup_file=${TM_SESSION_PATH}/${_session}
 
     if test -r ${_startup_file} ; then
