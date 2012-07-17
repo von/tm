@@ -3,6 +3,7 @@
 # tm: Start tmux sessions
 
 TM_SESSION_PATH=${TM_SESSION_PATH:-${HOME}/.tmux/sessions}
+TM_DEFAULT_SESSION="default"
 
 function tm_attach_existing()
 {
@@ -61,7 +62,7 @@ case ${1} in
         exit 1
         ;;
     *)
-        _session=${1:-default}
+        _session=${1:-${TM_DEFAULT_SESSION}}
         if tmux has -t ${_session} >/dev/null 2>&1 ; then
             tm_attach_existing "${_session}"
         else
