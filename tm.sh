@@ -5,6 +5,9 @@
 TM_SESSION_PATH=${TM_SESSION_PATH:-${HOME}/.tmux/sessions}
 TM_DEFAULT_SESSION="default"
 
+# Force 256 colors
+export TERM="xterm-256color"
+
 function tm_attach_existing()
 {
     local _session=${1}
