@@ -18,6 +18,9 @@ function tm_attach_existing()
         # session so that they are independent (i.e. they could each
         # view a different window).
 
+        # This is an improved version of:
+        # https://mutelight.org/practical-tmux
+
         # Find unused session name by appending incrementing index
         # Starting with 2 seems most natural, but value is arbitrary
         local _index=2
