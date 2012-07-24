@@ -10,10 +10,14 @@ set -u  # Unitialized variable is an error
 target=${1:-/usr/local/bin}
 
 if test ! -d ${target} ; then
+    echo "Creating ${target}"
     mkdir -p ${target}
 fi
 
+echo "Installing ${target}/tm"
 install -m 755 tm.sh ${target}/tm
+echo "Installing ${target}/tm-cmd"
 install -m 755 tm-cmd.sh ${target}/tm-cmd
 
+echo "Success."
 exit 0
