@@ -8,7 +8,7 @@ TM_DEFAULT_SESSION="default"
 # Force 256 colors
 export TERM="xterm-256color"
 
-function tm_attach_existing()
+tm_attach_existing()
 {
     local _session=${1}
 
@@ -39,7 +39,7 @@ function tm_attach_existing()
     fi
 }
 
-function tm_new_session()
+tm_new_session()
 {
     local _session=${1}
     local _startup_file=${TM_SESSION_PATH}/${_session}
