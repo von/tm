@@ -53,6 +53,28 @@ tm_new_session()
     fi
 }
 
+tm_check_server()
+{
+    # Return 0 if server already running, else 1
+    if tmux ls >/dev/null 2>&1 ; then
+        return 0
+    fi
+    return 1
+}
+
+tm_start_server()
+{
+    local _server_script=~/.tmux/start-server
+    if test -r ${_server_script} ; then
+        echo "Starting tmux server via ${_server_script}"
+        (source ${_server_script})
+    else
+        echo "Starting tmux server with session ${TM_DEFAULT_SESSION}"
+        local _tmux=$(which tmux)
+        bash -l -c "cd ${HOME} && ${_tmux} new-session -d -s ${TM_DEFAULT_SESSION}"
+    fi
+}
+
 ######################################################################
 #
 # Main
@@ -72,7 +94,15 @@ case ${1:-""} in
 esac
 
 _session=${1:-${TM_DEFAULT_SESSION}}
-if test -n "${TMUX}" ; then
+
+# Make sure server is running
+if tm_check_server ; then
+    :  # Server running
+else
+    tm_start_server
+fi
+
+if test -n "${TMUX:-}" ; then
     # Already in tmux, just change to session
     if tmux has -t ${_session} > /dev/null 2>&1 ; then
         tmux switch-client -t ${_session}
