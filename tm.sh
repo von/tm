@@ -69,15 +69,24 @@ case ${1:-""} in
         echo "Unrecognized command: ${1}"
         exit 1
         ;;
-    *)
-        _session=${1:-${TM_DEFAULT_SESSION}}
-        if tmux has -t ${_session} >/dev/null 2>&1 ; then
-            tm_attach_existing "${_session}"
-        else
-            tm_new_session "${_session}"
-        fi
-        ;;
 esac
+
+_session=${1:-${TM_DEFAULT_SESSION}}
+if test -n "${TMUX}" ; then
+    # Already in tmux, just change to session
+    if tmux has -t ${_session} > /dev/null 2>&1 ; then
+        tmux switch-client -t ${_session}
+    else
+        # TODO: Is this really true?
+        echo "Cannot create new session from within tmux"
+    fi
+else
+    if tmux has -t ${_session} >/dev/null 2>&1 ; then
+        tm_attach_existing "${_session}"
+    else
+        tm_new_session "${_session}"
+    fi
+fi
 
 exit 0
 
