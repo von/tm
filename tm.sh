@@ -8,34 +8,31 @@ TM_DEFAULT_SESSION="default"
 # Force 256 colors
 export TERM="xterm-256color"
 
-tm_attach_existing()
+tmux_new_session()
 {
+    # Start new detached session. Unsets TMUX so may be called inside of
+    # tmux session.
+    #
+    # Usage: [-t <target session>] <session>
+    local _args=""
+    if test ${1:-} = "-t"; then
+	_args="-t ${2}"
+	shift 2
+    fi
     local _session=${1}
+    (unset TMUX && tmux new-session -d ${_args} -s ${_session})
+}
 
-    if tmux ls | grep ${_session}: | grep "(attached)" > /dev/null ; then
-        # There is a client attached to the target session, open
-        # a second session attached to the target. Use a different
-        # session so that they are independent (i.e. they could each
-        # view a different window).
-
-        # This is an improved version of:
-        # https://mutelight.org/practical-tmux
-
-        # Find unused session name by appending incrementing index
-        # Starting with 2 seems most natural, but value is arbitrary
-        local _index=2
-        until tmux new-session -d -t ${_session} -s ${_session}-${_index} 2>/dev/null ; do
-            _index=$((_index+1))
-        done
-        local _my_session=${_session}-${_index}
-        echo "Attaching to existing session ${_session} via ${_my_session}"
-        tmux attach-session -t ${_my_session}
-        echo "Cleaning up ${_my_session}"
-        tmux kill-session -t ${_my_session}
+tmux_attach_session()
+{
+    # Attach to existing session.
+    # If in tmux already, does a 'switch-client' instead
+    local _session=${1}
+    if test -n "${TMUX:-}" ; then
+	# In tmux...
+	tmux switch-client -t ${_session}
     else
-        # No current client, just attached directly to session.
-        echo "Attaching to existing session ${_session}"
-        tmux attach-session -t ${_session}
+	tmux attach-session -t ${_session}
     fi
 }
 
@@ -44,20 +41,39 @@ tm_new_session()
     local _session=${1}
     local _startup_file=${TM_SESSION_PATH}/${_session}
 
+    echo "Creating new session ${_session}"
+    tmux_new_session ${_session}
     if test -r ${_startup_file} ; then
-        echo "Creating new session ${_session} using ${_startup_file}"
-        (source ${_startup_file})
-    else
-        echo "Creating new session ${_session}"
-        tmux new-session -s ${_session}
+	echo "Configuring using ${_startup_file}"
+	source ${_startup_file} ${_session}
     fi
+}
+
+tm_new_independant_session()
+{
+    # Create a new independant session attached to given target session
+    #
+    # This is an improved version of:
+    # https://mutelight.org/practical-tmux
+    #
+    # Usage: <session>
+    # outputs: <new session>
+
+    # Find unused session name by appending incrementing index
+    # Starting with 2 seems most natural, but value is arbitrary
+    _index=2
+    until tmux_new_session -t ${_session} ${_session}-${_index} 2>/dev/null ; do
+	_index=$((_index+1))
+    done
+    _target_session=${_session}-${_index}
+    echo ${_target_session}
 }
 
 tm_check_server()
 {
     # Return 0 if server already running, else 1
     if tmux ls >/dev/null 2>&1 ; then
-        return 0
+	return 0
     fi
     return 1
 }
@@ -66,12 +82,12 @@ tm_start_server()
 {
     local _server_script=~/.tmux/start-server
     if test -r ${_server_script} ; then
-        echo "Starting tmux server via ${_server_script}"
-        (source ${_server_script})
+	echo "Starting tmux server via ${_server_script}"
+	(source ${_server_script})
     else
-        echo "Starting tmux server with session ${TM_DEFAULT_SESSION}"
-        local _tmux=$(which tmux)
-        bash -l -c "cd ${HOME} && ${_tmux} new-session -d -s ${TM_DEFAULT_SESSION}"
+	echo "Starting tmux server with session ${TM_DEFAULT_SESSION}"
+	local _tmux=$(which tmux)
+	bash -l -c "cd ${HOME} && ${_tmux} new-session -d -s ${TM_DEFAULT_SESSION}"
     fi
 }
 
@@ -82,16 +98,33 @@ tm_start_server()
 set -e  # Exit on error
 set -u  # Use of unitialized variable is an error
 
-case ${1:-""} in
-    -ls)
-        ls -1 ${TM_SESSION_PATH} | grep -v "~$"
-        exit 0
-        ;;
-    -*)
-        echo "Unrecognized command: ${1}"
-        exit 1
-        ;;
-esac
+# Start independent session?
+independent="false"
+
+while true; do
+    case ${1:-""} in
+	-ls)
+	    ls -1 ${TM_SESSION_PATH} | grep -v "~$"
+            shift
+	    exit 0
+	    ;;
+	-i)
+	    independent="true"
+            shift
+	    ;;
+	-I)
+	    independent="false"
+            shift
+	    ;;
+	-*)
+	    echo "Unrecognized command: ${1}"
+	    exit 1
+	    ;;
+	*)
+	    break
+	    ;;
+    esac
+done
 
 _session=${1:-${TM_DEFAULT_SESSION}}
 
@@ -102,21 +135,42 @@ else
     tm_start_server
 fi
 
-if test -n "${TMUX:-}" ; then
-    # Already in tmux, just change to session
-    if tmux has -t ${_session} > /dev/null 2>&1 ; then
-        tmux switch-client -t ${_session}
+# Is the session already running?
+if tmux has -t ${_session} > /dev/null 2>&1 ; then
+    # Yes it is...
+    if test ${independent} = "true" ; then
+        # We want a session independent of any session already running.
+	# Does session already have a client?
+	if tmux ls | grep ${_session}: | grep "(attached)" > /dev/null ; then
+            # Yes, need to establish new session.
+	    if test -n "${TMUX:-}" ; then
+                # No way to clean up if we are inside of tmux since
+                # switch-client returns immediately.
+		echo "Cannot establish independant session inside of tmux"
+		exit 1
+	    fi
+	    _target_session=$(tm_new_independant_session ${_session})
+	    echo "Attaching to ${_session} via ${_target_session}"
+	    _session=${_target_session}
+	else
+            # Session has no client, attach as normal
+	    echo "Attaching to ${_session}"
+        fi
     else
-        # TODO: Is this really true?
-        echo "Cannot create new session from within tmux"
+        # Don't want independent, attach as normal
+	echo "Attaching to ${_session}"
     fi
 else
-    if tmux has -t ${_session} >/dev/null 2>&1 ; then
-        tm_attach_existing "${_session}"
-    else
-        tm_new_session "${_session}"
-    fi
+    # Session is not running start it...
+    tm_new_session ${_session}
+fi
+
+tmux_attach_session ${_session}
+
+# Clean up targetted session if we started it
+if test -n "${_target_session:-}" ; then
+    echo "Cleaning up ${_target_session}"
+    tmux kill-session -t ${_target_session}
 fi
 
 exit 0
-
