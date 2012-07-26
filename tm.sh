@@ -93,6 +93,65 @@ tm_start_server()
 
 ######################################################################
 #
+# These functions meant to be called from inside sourced startup script
+#
+
+cmd()  # Send a command to current pane
+{
+    # Usage: cmd <command to send to window>
+    local _cmd=${*}
+    tmux send-keys "${_cmd}" "Enter"
+}
+
+main_window()  # Configure the main window (window 0)
+{
+    # Usage: main_window [<window name>]
+    local _name=${1:-}
+    tmux select-window -t 0
+    if test -n "${_name:-}" ; then
+        tmux rename-window ${_name}
+    fi
+}
+
+new_window()  # Create a new window with optional name
+{
+    # Usage: new_window [<window name>]
+    local _name=${1:-}
+    if test -n "${_name:-}" ; then
+        tmux new-window -n ${_name}
+    else
+        tmux new-window
+    fi
+}
+
+select_pane()  # Select given pane
+{
+    # Usage select_pane <target>
+    local _target=${1}
+    tmux select-pane -t ${_target}
+}
+
+select_window()  # Select given window
+{
+    # Usage: select_window <name>
+    local _name=${1}
+    tmux select-window -t ${_name}
+}
+
+splith()  # split window horizontally
+{
+    # Usage: splith [<options>]
+    tmux split-window -h "${*:-}"
+}
+
+splitv()  # Split window vertically
+{
+    # Usage: splitv [<options>]
+    tmux split-window -v "${*:-}"
+}
+
+######################################################################
+#
 # Main
 
 set -e  # Exit on error
