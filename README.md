@@ -12,7 +12,7 @@ session, optionally with a new independent session.
 Usage
 ----------
 
-    tm [-i] [<session name>]
+    tm [-ls] [-i] [<session name>]
 
 If *session name* is not provided, the name "default" is used.
 
@@ -21,6 +21,9 @@ session, it will do so by creating a new session that targets the
 desired session so that it is independent (has its own view).  See the
 section "Attaching to Running Sessions."
 
+If `-ls` is provided, tmux will list all available session start up
+files it knows about (see session on "Scripted Sessions") and
+exit. This is indented for use with auto-completion.
 
 Scripted Sessions
 ----------
@@ -128,6 +131,13 @@ The only difference is you cannot create independent sessions from
 inside of tmux, so if you specify `-i` and a new session is needed,
 you will get an error. (The reason for this is that there is no way to
 clean up the independent session in that case.)
+
+Bash Auto-Completion
+------
+
+If you source tm-extras.sh you will get auto-completion with
+bash. That is, `tm <tab>` will list both all running sessions you can
+attach to and all sessions that tm knows about based on start up scripts.
 
 [teamocil]: https://github.com/remiprev/teamocil
 
