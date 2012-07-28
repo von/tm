@@ -4,39 +4,87 @@ tm
 tm is a tmux session manager. It does two things:
 
 1) Allows scripted starts of sessions like [tmuxinator][] or
-[teamocil][] (but admittedly not as well)
+[teamocil][]
 
-2) Starts a session if it is not running, or attached to a running
-session with a new independent session.
+2) Starts a session if it is not running, or attaches to a running
+session, optionally with a new independent session.
 
 Usage
 ----------
 
-    tm [<session name>]
+    tm [-i] [<session name>]
 
 If *session name* is not provided, the name "default" is used.
+
+If `-i` is provided, and if tm ends up attaching to an existing
+session, it will do so by creating a new session that targets the
+desired session so that it is independent (has its own view).  See the
+section "Attaching to Running Sessions."
+
 
 Scripted Sessions
 ----------
 
-If a session is started and ~/.tmux/sessions/*session name* exists, it
-is invoked with the expectation it will create and attach to the
-session.
+If tm starts a session and ~/.tmux/sessions/*session name* exists, it
+is invoked after the session is started and can configure the session
+by creating windows, splitting windows, running commands in panes,
+etc.
 
-This is the weakest part of tm, it really should just use
-teamocil. Figuring out how to integrate the two is a TODO.
+The script is a bash shell script with some helper functions defined
+as follows:
 
-Example session script. This session file creates a session with one
-window, two panes. It changes the directory in the bottom and selects
-the top.
+`cmd <command...>`
 
-    SESSIONNAME=test
-    cd ~/develop
-    tmux new-session -d -s ${SESSIONNAME}
-    tmux split-window -v
-    tmux send-keys "cd /tmp" "Enter"
-    tmux select-pane -t 0
-    tmux attach-session -t ${SESSIONNAME}
+Send all arguments to the currently selected pane as key strokes. A
+carriage return will be added. (Wrapper around `tmux send-keys`)
+
+`main_window <name>`
+
+configure the main window (the one that is created by default) by
+defining its name. (Wrapper around `tmux rename-window`)
+
+`new_window [-n <name>]`
+
+Create a new window with option name. (Wrapper around `tmux
+new-window`)
+
+`select_pane <pane>`
+
+Select the given pane in the current window. (Wrapper around `tmux
+select-pane`)
+
+`select_window <name>]`
+
+Cause the named pane to have focus. select_ commands must be the last
+things run in the script to be effective. (Wrapper around `tmux
+select-window`)
+
+`splith [<options>]`
+
+Split the current window horizontally. Any options will be passed to
+the tmux `split-window` command. (Wrapper around `tmux split -h`)
+
+`splitv [<options>]`
+
+Split the current window vertically. Any options will be passed to
+the tmux `split-window` command. (Wrapper around `tmux split -v`)
+
+Example session script.
+----------
+
+    # Create two windows, the first split into top and bottom panes, the
+    # second into left and right.
+    main_window main
+    cmd cd ~/develop
+    splitv
+    cmd cd /tmp
+
+    new_window win2
+    splith
+
+    # Focus on top pane in main window
+    select_window main
+    select_pane 0
 
 Attaching to Running Sessions
 ----------
@@ -44,13 +92,42 @@ Attaching to Running Sessions
 If tm is run with the name of a session that is already running, but
 has no clients attached, it will simply be attached to.
 
-If tm is run with the name of a session that is already running, but
-has one or more clients already attached, a new session will be
-created that is attached to the target session. This allows the new
-session to view windows in the first session independently of existing
-clients. The new session will be named *session name-N* where N is a
-number such that the name is unique.
+If tm is run with the name of a session that is already running and
+the `-i` option is not specified, it will simply attach.
 
+If tm is run with `-i` and the target session exists, a new
+independent session will be created that is attached to the target
+session and the new session will be attached to, giving the client
+freedom from other clients to view windows independently.  The new
+session will be named *session name-N* where N is a number such that
+the name is unique. When the client detaches, the independent session
+will be cleaned up (killed).
+
+Starting the tmux server
+--------
+
+If you run tm and a tmux server is not running, it will start one with
+the session `default` (running the start script for `default` if it
+exists).
+
+If the script `~/.tmux/start-server` exists, it will be run to start
+the server. It can do whatever it likes, it just needs to make sure
+when it finishes, a tmux server is running.
+
+Running Inside of tmux
+--------
+You can run tm inside or outside of tmux and it will behave the
+same. If you run it inside, it will create or attach to new sessions
+on the existing server.
+
+If you run tm outside of tmux, it will start the server if needed (see
+the previous section) and start or attach to the specified session as
+appropriate.
+
+The only difference is you cannot create independent sessions from
+inside of tmux, so if you specify `-i` and a new session is needed,
+you will get an error. (The reason for this is that there is no way to
+clean up the independent session in that case.)
 
 [teamocil]: https://github.com/remiprev/teamocil
 
