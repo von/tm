@@ -1,13 +1,16 @@
 tm
 ==========
 
-tm is a tmux session manager. It does two things:
+tm is a tmux session manager. It does the following:
 
 1) Allows scripted starts of sessions like [tmuxinator][] or
 [teamocil][]
 
 2) Starts a session if it is not running, or attaches to a running
 session, optionally with a new independent session.
+
+3) Allows for scripted start of the tmux server, so its environment
+can be specified.
 
 Usage
 ----------
@@ -23,7 +26,7 @@ section "Attaching to Running Sessions."
 
 If `-ls` is provided, tmux will list all available session start up
 files it knows about (see session on "Scripted Sessions") and
-exit. This is indented for use with auto-completion.
+exit. This is intended for use with auto-completion.
 
 Scripted Sessions
 ----------
@@ -114,8 +117,10 @@ the session `default` (running the start script for `default` if it
 exists).
 
 If the script `~/.tmux/start-server` exists, it will be run to start
-the server. It can do whatever it likes, it just needs to make sure
-when it finishes, a tmux server is running.
+the server instead. The intent is that is sets up a specific
+environment for the server rather than inheriting what is in the
+current environment. The script can do whatever it likes, it just
+needs to make sure when it finishes, a tmux server is running.
 
 Running Inside of tmux
 --------
