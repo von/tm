@@ -80,7 +80,7 @@ Example session script.
 
     # Create two windows, the first split into top and bottom panes, the
     # second into left and right.
-    main_window main
+    main_window
     cmd cd ~/develop
     splitv
     cmd cd /tmp
@@ -88,9 +88,10 @@ Example session script.
     new_window win2
     splith
 
-    # Focus on top pane in main window
-    select_window main
-    select_pane 0
+    # Focus on first window, top pane
+    # (Can use window name if you don't automatically rename them)
+    select_window 0
+    select_pane top
 
 Attaching to Running Sessions
 ----------
