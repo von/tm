@@ -15,7 +15,7 @@ can be specified.
 Usage
 ----------
 
-    tm [-ls] [-i] [<session name>]
+    tm [-ls] [-i] [-k] [<session name>]
 
 If *session name* is not provided, the name "default" is used.
 
@@ -23,6 +23,10 @@ If `-i` is provided, and if tm ends up attaching to an existing
 session, it will do so by creating a new session that targets the
 desired session so that it is independent (has its own view).  See the
 section "Attaching to Running Sessions."
+
+If '-k' is provided, the given session (or 'default' if no session
+name is give) is killed. This is equivalent to 'tmux kill-session -t
+*session name*'.
 
 If `-ls` is provided, tmux will list all available session start up
 files it knows about (see session on "Scripted Sessions") and

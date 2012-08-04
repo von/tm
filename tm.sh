@@ -165,10 +165,75 @@ splitv()  # Split window vertically
 
 ######################################################################
 #
+# Top-level commands
+#
+
+tm_kill()
+{
+    _session=${1}
+
+    tmux kill-session -t "${1}" || exit 1
+}
+
+tm_start()
+{
+    _session=${1}
+
+    # Make sure server is running
+    if tm_check_server ; then
+        :  # Server running
+    else
+        tm_start_server
+    fi
+
+    # Is the session already running?
+    if tmux has -t ${_session} > /dev/null 2>&1 ; then
+        # Yes it is...
+        if test ${independent} = "true" ; then
+            # We want a session independent of any session already running.
+	    # Does session already have a client?
+	    if tmux ls | grep ${_session}: | grep "(attached)" > /dev/null ; then
+                # Yes, need to establish new session.
+	        if test -n "${TMUX:-}" ; then
+                    # No way to clean up if we are inside of tmux since
+                    # switch-client returns immediately.
+		    echo "Cannot establish independant session inside of tmux"
+		    exit 1
+	        fi
+	        _target_session=$(tm_new_independant_session ${_session})
+	        echo "Attaching to ${_session} via ${_target_session}"
+	        _session=${_target_session}
+	    else
+                # Session has no client, attach as normal
+	        echo "Attaching to ${_session}"
+            fi
+        else
+            # Don't want independent, attach as normal
+	    echo "Attaching to ${_session}"
+        fi
+    else
+        # Session is not running start it...
+        tm_new_session ${_session}
+    fi
+
+    tmux_attach_session ${_session}
+
+    # Clean up targetted session if we started it
+    if test -n "${_target_session:-}" ; then
+        echo "Cleaning up ${_target_session}"
+        tmux kill-session -t ${_target_session}
+    fi
+}
+
+######################################################################
+#
 # Main
 
 set -e  # Exit on error
 set -u  # Use of unitialized variable is an error
+
+# Command
+cmd="start"
 
 # Start independent session?
 independent="false"
@@ -188,6 +253,10 @@ while true; do
 	    independent="false"
             shift
 	    ;;
+        -k)
+            cmd="kill"
+            shift
+            ;;
 	-*)
 	    echo "Unrecognized command: ${1}"
 	    exit 1
@@ -200,49 +269,22 @@ done
 
 _session=${1:-${TM_DEFAULT_SESSION}}
 
-# Make sure server is running
-if tm_check_server ; then
-    :  # Server running
-else
-    tm_start_server
-fi
+case ${cmd} in
+    kill)
+        tm_kill ${_session}
+        ;;
 
-# Is the session already running?
-if tmux has -t ${_session} > /dev/null 2>&1 ; then
-    # Yes it is...
-    if test ${independent} = "true" ; then
-        # We want a session independent of any session already running.
-	# Does session already have a client?
-	if tmux ls | grep ${_session}: | grep "(attached)" > /dev/null ; then
-            # Yes, need to establish new session.
-	    if test -n "${TMUX:-}" ; then
-                # No way to clean up if we are inside of tmux since
-                # switch-client returns immediately.
-		echo "Cannot establish independant session inside of tmux"
-		exit 1
-	    fi
-	    _target_session=$(tm_new_independant_session ${_session})
-	    echo "Attaching to ${_session} via ${_target_session}"
-	    _session=${_target_session}
-	else
-            # Session has no client, attach as normal
-	    echo "Attaching to ${_session}"
-        fi
-    else
-        # Don't want independent, attach as normal
-	echo "Attaching to ${_session}"
-    fi
-else
-    # Session is not running start it...
-    tm_new_session ${_session}
-fi
+    start)
+        tm_start ${_session}
+        ;;
 
-tmux_attach_session ${_session}
+    *)
+        echo "Unrecognized command: ${cmd}"
+        exit 1
+        ;;
+esac
 
-# Clean up targetted session if we started it
-if test -n "${_target_session:-}" ; then
-    echo "Cleaning up ${_target_session}"
-    tmux kill-session -t ${_target_session}
-fi
+exit 0
+
 
 exit 0
