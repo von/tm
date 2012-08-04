@@ -264,6 +264,11 @@ while true; do
     esac
 done
 
+TMRC=${HOME}/.tmux/tmrc
+if test -r ${TMRC} ; then
+    source ${TMRC}
+fi
+
 _session=${1:-${TM_DEFAULT_SESSION}}
 
 case ${cmd} in

@@ -142,6 +142,13 @@ inside of tmux, so if you specify `-i` and a new session is needed,
 you will get an error. (The reason for this is that there is no way to
 clean up the independent session in that case.)
 
+~/.tmux/tmrc
+------
+
+If `~/.tmux.tmrc` exists it will be sourced by tm. tmrc can define
+functions that can be called in session scripts or set other
+environment variables.
+
 Bash Auto-Completion
 ------
 
