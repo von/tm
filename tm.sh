@@ -5,9 +5,6 @@
 TM_SESSION_PATH=${TM_SESSION_PATH:-${HOME}/.tmux/sessions}
 TM_DEFAULT_SESSION="default"
 
-# Force 256 colors
-export TERM="xterm-256color"
-
 tmux_new_session()
 {
     # Start new detached session. Unsets TMUX so may be called inside of
