@@ -108,6 +108,13 @@ cmd()  # Send a command to current pane
     tmux send-keys -t ${_target} "${_cmd}" "Enter"
 }
 
+default_path()  # Configure the default directory for new panes
+{
+    # Usage: default_directory <path>
+    local _path=${*}
+    tmux set-option -t ${_session} default-path "${*}"
+}
+
 main_window()  # Configure the main window (window 0)
 {
     # Usage: main_window [<window name>]
