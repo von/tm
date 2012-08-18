@@ -10,20 +10,35 @@ tmux_new_session()
     # Start new detached session. Unsets TMUX so may be called inside of
     # tmux session.
     #
-    # Usage: [-t <target session>] <session>
+    # Usage: [-t <target session>] [-n <window name>] <session> [<cmd>]
     local _args=""
-    if test ${1:-} = "-t"; then
-	_args="-t ${2}"
-	shift 2
+    while true ; do
+        case ${1:-} in
+            -n)
+                _args="-n ${2}"
+                shift 2
+                ;;
+            -t)
+	        _args="-t ${2}"
+	        shift 2
+                ;;
+            *)
+                break
+                ;;
+        esac
+    done
+    local _session=${1} ; shift
+    if test -n "${1:-}" ; then
+        _args=${_args}" \"${1}\""
+        shift
     fi
-    local _session=${1}
     if test -n "${TMUX:-}" ; then
         # Inside of tmux, start session and attach so it susequent
         # commands go to it by default.
-        (unset TMUX && tmux new-session -d ${_args} -s ${_session})
+        (unset TMUX && tmux new-session -d -s ${_session} ${_args})
     else
         # Outside of tmux, just start detached session...
-        tmux new-session -d ${_args} -s ${_session}
+        tmux new-session -d -s ${_session} ${_args}
     fi
 }
 
@@ -45,11 +60,11 @@ tm_new_session()
     local _startup_file=${TM_SESSION_PATH}/${_session}
 
     echo "Creating new session ${_session}"
-    tmux_new_session ${_session}
     if test -r ${_startup_file} ; then
 	echo "Configuring using ${_startup_file}"
-        _target=${_session}  # Define target for commands
 	source ${_startup_file} ${_session}
+    else
+        tmux_new_session ${_session}
     fi
 }
 
@@ -99,13 +114,15 @@ tm_start_server()
 #
 # These functions meant to be called from inside sourced startup script
 #
-# These functions use the global _target for their target.
+# These functions use the following globals:
+#   _last_window : the name of the last window created.
+#   _session : the name of session
 
 cmd()  # Send a command to current pane
 {
     # Usage: cmd <command to send to window>
     local _cmd=${*}
-    tmux send-keys -t ${_target} "${_cmd}" "Enter"
+    tmux send-keys -t ${_last_window} "${_cmd}" "Enter"
 }
 
 default_path()  # Configure the default directory for new panes
@@ -115,16 +132,11 @@ default_path()  # Configure the default directory for new panes
     tmux set-option -t ${_session} default-path "${*}"
 }
 
-main_window()  # Configure the main window (window 0)
+new_session()  # Create new session
 {
-    # Usage: main_window [<window name>]
-    local _name=${1:-}
-    # Reset to original window
-    tmux select-window -t ${_session}
-    _target=${_session}
-    if test -n "${_name:-}" ; then
-        tmux rename-window ${_name}
-    fi
+    # Usage: new_session [-n <window-name>] <session name> [<cmd>]
+    tmux_new_session "$@"
+    _last_window=${1}
 }
 
 new_window()  # Create a new window with optional name
@@ -136,7 +148,7 @@ new_window()  # Create a new window with optional name
         _args="-n ${_name}"
     fi
     # -P = print new window information
-    _target=$(tmux new-window -P -t ${_target} ${_args})
+    _last_window=$(tmux new-window -P -t ${_session} ${_args})
 }
 
 select_pane()  # Select given pane
@@ -151,20 +163,20 @@ select_window()  # Select given window
 {
     # Usage: select_window <name>
     local _name=${1}
-    _target=${_name}
     tmux select-window -t ${_session}:${_name}
+    _last_window=${_name}
 }
 
 splith()  # split window horizontally
 {
     # Usage: splith [<options>]
-    tmux split-window -h -t ${_target} "${*:-}"
+    tmux split-window -h -t ${_last_window} "${*:-}"
 }
 
 splitv()  # Split window vertically
 {
     # Usage: splitv [<options>]
-    tmux split-window -v -t ${_target} "${*:-}"
+    tmux split-window -v -t ${_last_window} "${*:-}"
 }
 
 ######################################################################

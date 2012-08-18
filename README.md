@@ -43,15 +43,16 @@ etc.
 The script is a bash shell script with some helper functions defined
 as follows:
 
+`new_session_window [-n <window name>] <session name> [<cmd>]`
+
+This must be the first command in the file to create the session.
+It may optionally specify the name and command to be run in the
+initial window created.
+
 `cmd <command...>`
 
 Send all arguments to the currently selected pane as key strokes. A
 carriage return will be added. (Wrapper around `tmux send-keys`)
-
-`main_window <name>`
-
-configure the main window (the one that is created by default) by
-defining its name. (Wrapper around `tmux rename-window`)
 
 `new_window [-n <name>]`
 
@@ -84,7 +85,7 @@ Example session script.
 
     # Create two windows, the first split into top and bottom panes, the
     # second into left and right.
-    main_window
+    new_session -n win1 example
     cmd cd ~/develop
     splitv
     cmd cd /tmp
