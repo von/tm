@@ -43,7 +43,7 @@ etc.
 The script is a bash shell script with some helper functions defined
 as follows:
 
-`new_session_window [-n <window name>] <session name> [<cmd>]`
+`new_session [-n <window name>] <session name> [<cmd>]`
 
 This must be the first command in the file to create the session.
 It may optionally specify the name and command to be run in the
