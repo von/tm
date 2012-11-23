@@ -1,0 +1,17 @@
+#compdef tm
+#
+# tm completion for zsh
+
+_tm() {
+    local -a sessions
+    # All configured and running session
+    sessions=(`tm -ls` `tmux -q list-sessions 2>/dev/null | cut -f 1 -d ':'`)
+    _arguments '*:sessions:($sessions)'
+    return 0
+}
+
+_tm
+
+# Local Variables:
+# mode: Shell-Script
+# End:
