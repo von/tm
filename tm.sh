@@ -308,6 +308,3 @@ case ${cmd} in
 esac
 
 exit 0
-
-
-exit 0
