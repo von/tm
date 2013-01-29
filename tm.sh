@@ -130,6 +130,7 @@ cmd()  # Send a command to current pane
 default_path()  # Configure the default directory for new panes
 {
     # Usage: default_directory <path>
+    # XXX This doesn't seem to work reliably.
     local _path=${*}
     ${TMUX_CMD} set-option -t ${_session} default-path "${*}"
 }
