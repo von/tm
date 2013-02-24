@@ -186,6 +186,22 @@ splitv()  # Split window vertically
 # Top-level commands
 #
 
+tm_help()
+{
+    cat <<EOF
+Usage: $0 [<options>] [<session name>]
+
+Options:
+    -h       Print help and exit.
+    -i       If attaching, attach independantly.
+    -I       If attaching, do not attach independantly.
+    -k       Kill <session name>.
+    -ls      List available sessions. Meant for use by completion code.
+
+With no option to contrary, create or attach to <session name>.
+EOF
+}
+
 tm_kill()
 {
     _session=${1}
@@ -258,6 +274,10 @@ independent="false"
 
 while true; do
     case ${1:-""} in
+        -h)
+            tm_help
+            exit 0
+            ;;
 	-ls)
 	    ls -1 ${TM_SESSION_PATH} | grep -v "~$"
             shift
