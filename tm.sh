@@ -196,10 +196,18 @@ Options:
     -i       If attaching, attach independantly.
     -I       If attaching, do not attach independantly.
     -k       Kill <session name>.
+    -l       List running sessions.
     -ls      List available sessions. Meant for use by completion code.
 
 With no option to contrary, create or attach to <session name>.
 EOF
+}
+
+tm_list()
+{
+    _session=${1}
+
+    ${TMUX_CMD} -q list-sessions 2> /dev/null | cut -f 1 -d ':'
 }
 
 tm_kill()
@@ -278,6 +286,10 @@ while true; do
             tm_help
             exit 0
             ;;
+        -l)
+            cmd="list"
+            shift
+            ;;
 	-ls)
 	    ls -1 ${TM_SESSION_PATH} | grep -v "~$"
             shift
@@ -315,6 +327,10 @@ _session=${1:-${TM_DEFAULT_SESSION}}
 case ${cmd} in
     kill)
         tm_kill ${_session}
+        ;;
+
+    list)
+        tm_list ${_session}
         ;;
 
     start)
