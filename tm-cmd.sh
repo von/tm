@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #
 # Wrapper around 'tmux send-keys' to handle sending 'Enter'
 tmux send-keys "${*}"
