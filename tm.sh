@@ -107,8 +107,8 @@ tm_start_server()
 	echo "Starting tmux server via ${_server_script}"
 	(source ${_server_script})
     else
-	echo "Starting tmux server with session ${TM_DEFAULT_SESSION}"
-	bash -l -c "cd ${HOME} && ${TMUX_CMD} new-session -d -s ${TM_DEFAULT_SESSION}"
+	echo "Starting tmux server"
+	bash -l -c "cd ${HOME} && ${TMUX_CMD} start-server"
     fi
 }
 
