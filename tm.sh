@@ -197,6 +197,7 @@ Options:
     -i       If attaching, attach independantly.
     -I       If attaching, do not attach independantly.
     -k       Kill <session name>.
+    -K       Kill tmux server.
     -l       List running sessions.
     -ls      List available sessions. Meant for use by completion code.
 
@@ -216,6 +217,11 @@ tm_kill()
     _session=${1}
 
     ${TMUX_CMD} kill-session -t "${1}" || exit 1
+}
+
+tm_kill_server()
+{
+    ${TMUX_CMD} kill-server
 }
 
 tm_start()
@@ -308,6 +314,10 @@ while true; do
             cmd="kill"
             shift
             ;;
+        -K)
+            cmd="kill-server"
+            shift
+            ;;
 	-*)
 	    echo "Unrecognized command: ${1}"
 	    exit 1
@@ -328,6 +338,10 @@ _session=${1:-${TM_DEFAULT_SESSION}}
 case ${cmd} in
     kill)
         tm_kill ${_session}
+        ;;
+
+    kill-server)
+        tm_kill_server
         ;;
 
     list)
