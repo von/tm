@@ -142,16 +142,24 @@ new_session()  # Create new session
     _last_window=${1}
 }
 
-new_window()  # Create a new window with optional name
+new_window()  # Create a new window with optional name and starting dir (-c)
 {
-    # Usage: new_window [<window name>]
-    local _name=${1:-}
-    local _args=""
-    if test -n "${_name:-}" ; then
-        _args="-n ${_name}"
-    fi
     # -P = print new window information
-    _last_window=$(${TMUX_CMD} new-window -P -t ${_session} ${_args})
+    local _args="-P -t ${_session}"
+    while test -n "${1}" ; do
+        case ${1:-} in
+            -c)  # Starting directory
+                _args="${_args} -c ${2}"
+                shift 2
+                ;;
+            *)
+                _args="${_args} -n ${1}"
+                shift
+                break
+                ;;
+        esac
+    done
+    _last_window=$(${TMUX_CMD} new-window ${_args})
 }
 
 select_pane()  # Select given pane
