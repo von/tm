@@ -279,7 +279,6 @@ tm_start()
 # Main
 
 set -e  # Exit on error
-set -u  # Use of unitialized variable is an error
 
 # Command
 cmd="start"
