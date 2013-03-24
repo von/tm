@@ -139,7 +139,7 @@ new_session()  # Create new session
 {
     # Usage: new_session [-n <window-name>] <session name> [<cmd>]
     tmux_new_session "$@"
-    _last_window=${1}
+    _last_window=${1}  # XXX, this is broken if window_name given
 }
 
 new_window()  # Create a new window with optional name and starting dir (-c)
