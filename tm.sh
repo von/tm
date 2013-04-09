@@ -3,6 +3,7 @@
 # tm: Start tmux sessions
 
 TM_SESSION_PATH=${TM_SESSION_PATH:-${HOME}/.tmux/sessions}
+TM_INIT_PATH=${TM_INIT_PATH:-${HOME}/.tmux/init}
 TM_DEFAULT_SESSION="default"
 
 TMUX_CMD="tmux"
@@ -213,11 +214,18 @@ With no option to contrary, create or attach to <session name>.
 EOF
 }
 
-tm_list()
+tm_list()  # List running sessions
 {
     _session=${1}
 
     ${TMUX_CMD} -q list-sessions 2> /dev/null | cut -f 1 -d ':'
+}
+
+tm_ls()  # List sessions we have configuration files for
+{
+    (test -d ${TM_SESSION_PATH} && cd ${TM_SESSION_PATH} && ls -1 ;
+        test -d ${TM_INIT_PATH} && cd ${TM_INIT_PATH} && ls -1) | \
+            grep -v -e "~$" | grep -v -e "^#.*#$" | sort | uniq
 }
 
 tm_kill()
@@ -300,14 +308,13 @@ while true; do
             tm_help
             exit 0
             ;;
-        -l)
+        -l)  # List running sessions
             cmd="list"
             shift
             ;;
-	-ls)
-	    ls -1 ${TM_SESSION_PATH} | grep -v "~$"
+	-ls)  # List sessions we have configuration files for
+            cmd="ls"
             shift
-	    exit 0
 	    ;;
 	-i)
 	    independent="true"
@@ -353,6 +360,10 @@ case ${cmd} in
 
     list)
         tm_list ${_session}
+        ;;
+
+    ls)
+        tm_ls ${_session}
         ;;
 
     start)
