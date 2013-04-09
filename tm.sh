@@ -2,6 +2,8 @@
 #
 # tm: Start tmux sessions
 
+TM_VERSION="0.1"
+
 TM_SESSION_PATH=${TM_SESSION_PATH:-${HOME}/.tmux/sessions}
 TM_INIT_PATH=${TM_INIT_PATH:-${HOME}/.tmux/init}
 TM_DEFAULT_SESSION="default"
@@ -331,6 +333,11 @@ while true; do
         -K)
             cmd="kill-server"
             shift
+            ;;
+        -v)
+            echo "tm version ${TM_VERSION}"
+            shift
+            exit 0
             ;;
 	-*)
 	    echo "Unrecognized command: ${1}"
