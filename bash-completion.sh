@@ -1,5 +1,5 @@
 #
-# Extra for tm package
+# Bash completion for tm
 #
 
 # tm completion: include both session available and session running

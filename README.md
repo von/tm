@@ -153,7 +153,7 @@ environment variables.
 Bash Auto-Completion
 ------
 
-If you source tm-extras.sh you will get auto-completion with
+If you source bash_completion.sh you will get auto-completion with
 bash. That is, `tm <tab>` will list both all running sessions you can
 attach to and all sessions that tm knows about based on start up scripts.
 
