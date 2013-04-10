@@ -15,21 +15,32 @@ can be specified.
 Usage
 ----------
 
-    tm [-ls] [-i] [-k] [<session name>]
+    tm [<options>] [<session name>]
 
-If *session name* is not provided, the name "default" is used.
+If *session name* is not provided, the contents of the
+*TM_DEFAULT_SESSION* environment variable is used; if that variable is
+not set, the name "default" is used.
 
-If `-i` is provided, and if tm ends up attaching to an existing
-session, it will do so by creating a new session that targets the
-desired session so that it is independent (has its own view).  See the
-section "Attaching to Running Sessions."
+The following options are also supported:
 
-If '-k' is provided, the given session (or 'default' if no session
-name is give) is killed. This is equivalent to 'tmux kill-session -t
-*session name*'.
+'-h' Print help and exit.
 
-If `-ls` is provided, tmux will list all available session start up
-files it knows about (see session on "Scripted Sessions") and
+'-i` When Attaching to an existing session, do so by creating a new
+session that targets the desired session so that it is independent
+(has its own view).  See the section "Attaching to Running Sessions."
+
+'-I' When Attaching to an existing session, do so directly without
+creating an independent session. This is the default.  See the section
+"Attaching to Running Sessions."
+
+'-k' Kill the given session. This is equivalent to 'tmux kill-session
+-t *session name*'.
+
+'-K' Kill the tmux server and exit.
+
+'-l' List all running sessions and exit. This is equivalent to 'tmux list-sessions'.
+
+`-ls` List all available session start up files (see session on "Scripted Sessions") and
 exit. This is intended for use with auto-completion.
 
 Scripted Sessions
