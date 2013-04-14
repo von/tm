@@ -90,7 +90,7 @@ new-window`)
 Select the given pane in the current window. (Wrapper around `tmux
 select-pane`)
 
-`select_window <name>]`
+`select_window <name>`
 
 Cause the named pane to have focus. select_ commands must be the last
 things run in the script to be effective. (Wrapper around `tmux
