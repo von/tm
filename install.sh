@@ -16,8 +16,6 @@ fi
 
 echo "Installing ${target}/tm"
 install -m 755 tm.sh ${target}/tm
-echo "Installing ${target}/tm-cmd"
-install -m 755 tm-cmd.sh ${target}/tm-cmd
 
 echo "Success."
 exit 0
