@@ -76,6 +76,10 @@ initial window created.
 Send all arguments to the currently selected pane as key strokes. A
 carriage return will be added. (Wrapper around `tmux send-keys`)
 
+`default_path <path>`
+
+Set the default path for new panes/windows for the current session.
+
 `new_window [-n <name>]`
 
 Create a new window with option name. (Wrapper around `tmux
