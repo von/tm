@@ -106,6 +106,37 @@ the tmux `split-window` command. (Wrapper around `tmux split -h`)
 Split the current window vertically. Any options will be passed to
 the tmux `split-window` command. (Wrapper around `tmux split -v`)
 
+Init Script
+----------
+
+If you source 'tm-init.sh' in your bash or zshrc startup, this script
+will look for ~/.tmux/init/*session name* and if it exists, source
+it. This allows every shell started in a session to run some common
+initialization code to, e.g., change the working directory, set up the
+environment, run a command.
+
+You probably want to source this file late in your shell
+initialization after your PATH and other configuration is complete.
+
+'tm-init.sh' also provides some functions for use in a shell running
+in tmux:
+
+`tmux_session_name`
+
+Prints the name of the tmux session containing the shell.
+
+`tmux_window_name`
+
+Prints the name of the tmux window containing the shell.
+
+`tmux_pane_title`
+
+Prints the name of the tmux pane containing the shell.
+
+`tmux_set_pane_title <title>`
+
+Sets the title of the tmux pane containing the shell.
+
 Example session script.
 ----------
 
