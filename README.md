@@ -1,7 +1,10 @@
 tm
 ==========
 
-tm is a tmux session manager. It does the following:
+tm is a tmux session manager. For the latest version, please see its
+github page: https://github.com/von/tm
+
+tm does the following:
 
 1) Allows scripted starts of sessions like [tmuxinator][] or
 [teamocil][]
@@ -11,6 +14,14 @@ session, optionally with a new independent session.
 
 3) Allows for scripted start of the tmux server, so its environment
 can be specified.
+
+tm uses bash scripts for all of the tasks, allow the user a great deal
+of flexibility and power. tm provides helper functions to automate
+common tmux actions to ease writing these scripts. No configuration is
+needed to start using tm.
+
+Unlike tmux, tm can be used inside of a tmux session, allowing it to
+be used to switch or create sessions from the command-line easily.
 
 Usage
 ----------
