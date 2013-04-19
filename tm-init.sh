@@ -10,6 +10,9 @@
 # your init scripts.
 #
 # Also adds some helper functions if we are running in a tmux session.
+#
+# Kudos to the following for how to print session name, window name
+# and pane title: http://betabug.ch/blogs/bsdcow/48
 
 if test -n "${TMUX}" ; then
     # We are in tmux...
