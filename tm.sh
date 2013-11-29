@@ -106,18 +106,6 @@ tm_check_server()
   return 1
 }
 
-tm_start_server()
-{
-  local _server_script=~/.tmux/start-server
-  if test -r ${_server_script} ; then
-    echo "Starting tmux server via ${_server_script}"
-    (source ${_server_script})
-  else
-    echo "Starting tmux server"
-    bash -l -c "cd ${HOME} && ${TMUX_CMD} start-server"
-  fi
-}
-
 ######################################################################
 #
 # These functions meant to be called from inside sourced startup script
@@ -248,13 +236,6 @@ tm_kill_server()
 tm_start()
 {
   _session=${1}
-
-  # Make sure server is running
-  if tm_check_server ; then
-    :  # Server running
-  else
-    tm_start_server
-  fi
 
   # Is the session already running?
   if ${TMUX_CMD} has -t ${_session} > /dev/null 2>&1 ; then

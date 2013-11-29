@@ -12,9 +12,6 @@ tm does the following:
 2) Starts a session if it is not running, or attaches to a running
 session, optionally with a new independent session.
 
-3) Allows for scripted start of the tmux server, so its environment
-can be specified.
-
 tm uses bash scripts for all of the tasks, allow the user a great deal
 of flexibility and power. tm provides helper functions to automate
 common tmux actions to ease writing these scripts. No configuration is
@@ -171,19 +168,6 @@ freedom from other clients to view windows independently.  The new
 session will be named *session name-N* where N is a number such that
 the name is unique. When the client detaches, the independent session
 will be cleaned up (killed).
-
-Starting the tmux server
---------
-
-If you run tm and a tmux server is not running, it will start one with
-the session `default` (running the start script for `default` if it
-exists).
-
-If the script `~/.tmux/start-server` exists, it will be run to start
-the server instead. The intent is that is sets up a specific
-environment for the server rather than inheriting what is in the
-current environment. The script can do whatever it likes, it just
-needs to make sure when it finishes, a tmux server is running.
 
 Running Inside of tmux
 --------
