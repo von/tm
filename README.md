@@ -133,7 +133,7 @@ Prints the name of the tmux window containing the shell.
 
 Prints the name of the tmux pane containing the shell.
 
-`tmux_set_pane_title <title>`
+`tmux_set_pane_title <new title>`
 
 Sets the title of the tmux pane containing the shell.
 
