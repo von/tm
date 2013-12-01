@@ -8,8 +8,9 @@ TM_SESSION_PATH=${TM_SESSION_PATH:-${HOME}/.tmux/sessions}
 TM_INIT_PATH=${TM_INIT_PATH:-${HOME}/.tmux/init}
 TM_DEFAULT_SESSION="default"
 
+# These can be overridden by ~/.tmux/tmrc
 TMUX_CMD="tmux"
-TMUX_CMD+=" -2"  # 256 color mode
+TMUX_ARGS=""
 
 tmux_new_session()
 {
@@ -44,10 +45,10 @@ tmux_new_session()
   if test -n "${TMUX:-}" ; then
     # Inside of tmux, start session and attach so it susequent
     # commands go to it by default.
-    (unset TMUX && ${TMUX_CMD} new-session -d -s ${_session} ${_args})
+    (unset TMUX && ${TMUX_CMD} ${TMUX_ARGS} new-session -d -s ${_session} ${_args})
   else
     # Outside of tmux, just start detached session...
-    ${TMUX_CMD} new-session -d -s ${_session} ${_args}
+    ${TMUX_CMD} ${TMUX_ARGS} new-session -d -s ${_session} ${_args}
   fi
 }
 
@@ -57,9 +58,9 @@ tmux_attach_session()
   # If in tmux already, does a 'switch-client' instead
   local _session=${1}
   if test -n "${TMUX:-}" ; then
-    ${TMUX_CMD} switch-client -t ${_session}
+    ${TMUX_CMD} ${TMUX_ARGS} switch-client -t ${_session}
   else
-    ${TMUX_CMD} attach-session -t ${_session}
+    ${TMUX_CMD} ${TMUX_ARGS} attach-session -t ${_session}
   fi
 }
 
@@ -100,7 +101,7 @@ tm_new_independant_session()
 tm_check_server()
 {
   # Return 0 if server already running, else 1
-  if ${TMUX_CMD} ls >/dev/null 2>&1 ; then
+  if ${TMUX_CMD} ${TMUX_ARGS} ls >/dev/null 2>&1 ; then
     return 0
   fi
   return 1
@@ -118,7 +119,7 @@ cmd()  # Send a command to current pane
 {
   # Usage: cmd <command to send to window>
   local _cmd=${*}
-  ${TMUX_CMD} send-keys -t ${_last_window} "${_cmd}" "Enter"
+  ${TMUX_CMD} ${TMUX_ARGS} send-keys -t ${_last_window} "${_cmd}" "Enter"
 }
 
 default_path()  # Configure the default directory for new panes
@@ -126,7 +127,7 @@ default_path()  # Configure the default directory for new panes
   # Usage: default_directory <path>
   # XXX This doesn't seem to work reliably.
   local _path=${*}
-  ${TMUX_CMD} set-option -t ${_session} default-path "${*}"
+  ${TMUX_CMD} ${TMUX_ARGS} set-option -t ${_session} default-path "${*}"
 }
 
 new_session()  # Create new session
@@ -153,7 +154,7 @@ new_window()  # Create a new window with optional name and starting dir (-c)
         ;;
     esac
   done
-  _last_window=$(${TMUX_CMD} new-window ${_args})
+  _last_window=$(${TMUX_CMD} ${TMUX_ARGS} new-window ${_args})
 }
 
 select_pane()  # Select given pane
@@ -161,27 +162,27 @@ select_pane()  # Select given pane
   # Usage select_pane <target>
   local _target=${1}
   # Select given pane in our session, current window
-  ${TMUX_CMD} select-pane -t ${_session}:.${_target}
+  ${TMUX_CMD} ${TMUX_ARGS} select-pane -t ${_session}:.${_target}
 }
 
 select_window()  # Select given window
 {
   # Usage: select_window <name>
   local _name=${1}
-  ${TMUX_CMD} select-window -t ${_session}:${_name}
+  ${TMUX_CMD} ${TMUX_ARGS} select-window -t ${_session}:${_name}
   _last_window=${_name}
 }
 
 splith()  # split window horizontally
 {
   # Usage: splith [<options>]
-  ${TMUX_CMD} split-window -h -t ${_last_window} "${*:-}"
+  ${TMUX_CMD} ${TMUX_ARGS} split-window -h -t ${_last_window} "${*:-}"
 }
 
 splitv()  # Split window vertically
 {
   # Usage: splitv [<options>]
-  ${TMUX_CMD} split-window -v -t ${_last_window} "${*:-}"
+  ${TMUX_CMD} ${TMUX_ARGS} split-window -v -t ${_last_window} "${*:-}"
 }
 
 ######################################################################
@@ -211,7 +212,7 @@ tm_list()  # List running sessions
 {
   _session=${1}
 
-  ${TMUX_CMD} -q list-sessions 2> /dev/null | cut -f 1 -d ':'
+  ${TMUX_CMD} ${TMUX_ARGS} -q list-sessions 2> /dev/null | cut -f 1 -d ':'
 }
 
 tm_ls()  # List sessions we have configuration files for
@@ -225,12 +226,12 @@ tm_kill()
 {
   _session=${1}
 
-  ${TMUX_CMD} kill-session -t "${1}" || exit 1
+  ${TMUX_CMD} ${TMUX_ARGS} kill-session -t "${1}" || exit 1
 }
 
 tm_kill_server()
 {
-  ${TMUX_CMD} kill-server
+  ${TMUX_CMD} ${TMUX_ARGS} kill-server
 }
 
 tm_start()
@@ -238,12 +239,12 @@ tm_start()
   _session=${1}
 
   # Is the session already running?
-  if ${TMUX_CMD} has -t ${_session} > /dev/null 2>&1 ; then
+  if ${TMUX_CMD} ${TMUX_ARGS} has -t ${_session} > /dev/null 2>&1 ; then
     # Yes it is...
     if test ${independent} = "true" ; then
       # We want a session independent of any session already running.
       # Does session already have a client?
-      if ${TMUX_CMD} ls | grep ${_session}: | grep "(attached)" > /dev/null ; then
+      if ${TMUX_CMD} ${TMUX_ARGS} ls | grep ${_session}: | grep "(attached)" > /dev/null ; then
         # Yes, need to establish new session.
         if test -n "${TMUX:-}" ; then
           # No way to clean up if we are inside of tmux since
@@ -272,7 +273,7 @@ tm_start()
   # Clean up targetted session if we started it
   if test -n "${_target_session:-}" ; then
     echo "Cleaning up ${_target_session}"
-    ${TMUX_CMD} kill-session -t ${_target_session}
+    ${TMUX_CMD} ${TMUX_ARGS} kill-session -t ${_target_session}
   fi
 }
 

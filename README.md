@@ -191,6 +191,9 @@ If `~/.tmux/tmrc` exists it will be sourced by tm. tmrc can define
 functions that can be called in session scripts or set other
 environment variables.
 
+The variable *TMUX_ARGS* may be set to specify arguments to be passed
+to tmux when called.
+
 Bash Auto-Completion
 ------
 
