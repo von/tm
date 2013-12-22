@@ -77,10 +77,9 @@ carriage return will be added. (Wrapper around `tmux send-keys`)
 
 Set the default path for new panes/windows for the current session.
 
-`new_window [-n <name>]`
+`new_window [<args>]`
 
-Create a new window with option name. (Wrapper around `tmux
-new-window`)
+Create a new window. (Wrapper around `tmux new-window`)
 
 `select_pane <pane>`
 

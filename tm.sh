@@ -2,7 +2,7 @@
 #
 # tm: Start tmux sessions
 
-TM_VERSION="0.2"
+TM_VERSION="0.3"
 
 TM_SESSION_PATH=${TM_SESSION_PATH:-${HOME}/.tmux/sessions}
 TM_INIT_PATH=${TM_INIT_PATH:-${HOME}/.tmux/init}
@@ -27,7 +27,7 @@ tmux_new_session()
         ;;
       -t)
         _args="-t ${2}"
-        shift 2
+        shift [M R5
         ;;
       *)
         break
@@ -37,18 +37,13 @@ tmux_new_session()
 
   local _session=${1} ; shift
 
-  if test -n "${1:-}" ; then
-    _args=${_args}" \"${1}\""
-    shift
-  fi
-
   if test -n "${TMUX:-}" ; then
     # Inside of tmux, start session and attach so it susequent
     # commands go to it by default.
-    (unset TMUX && ${TMUX_CMD} ${TMUX_ARGS} new-session -d -s ${_session} ${_args})
+    (unset TMUX && ${TMUX_CMD} ${TMUX_ARGS} new-session -d -s ${_session} "${*}")
   else
     # Outside of tmux, just start detached session...
-    ${TMUX_CMD} ${TMUX_ARGS} new-session -d -s ${_session} ${_args}
+    ${TMUX_CMD} ${TMUX_ARGS} new-session -d -s ${_session} ${_args} "${*}"
   fi
 }
 
@@ -137,24 +132,11 @@ new_session()  # Create new session
   _last_window=${1}  # XXX, this is broken if window_name given
 }
 
-new_window()  # Create a new window with optional name and starting dir (-c)
+new_window()  # Create a new window, args as 'tmux new-window'
 {
   # -P = print new window information
   local _args="-P -t ${_session}"
-  while test -n "${1}" ; do
-    case ${1:-} in
-      -c)  # Starting directory
-        _args="${_args} -c ${2}"
-        shift 2
-        ;;
-      *)
-        _args="${_args} -n ${1}"
-        shift
-        break
-        ;;
-    esac
-  done
-  _last_window=$(${TMUX_CMD} ${TMUX_ARGS} new-window ${_args})
+  _last_window=$(${TMUX_CMD} ${TMUX_ARGS} new-window ${_args} "${@}")
 }
 
 select_pane()  # Select given pane
