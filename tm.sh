@@ -41,14 +41,22 @@ tmux_new_session()
   fi
 
   local _session=${1} ; shift
+  local _cmd=""
+
+  # Turn args into one quoted string
+  # Kudos: http://stackoverflow.com/a/8723305/197789
+  local _arg
+  for _arg in "$@" ; do
+    _cmd="$_cmd \"${_arg//\"/\\\"}\""  #" (vim syntax fix)
+  done
 
   if test -n "${TMUX:-}" ; then
     # Inside of tmux, start session and attach so it susequent
     # commands go to it by default.
-    (unset TMUX && ${TMUX_CMD} ${TMUX_ARGS} ${_verbose} new-session -d -s ${_session} "${*}")
+    (unset TMUX && ${TMUX_CMD} ${TMUX_ARGS} ${_verbose} new-session -d -s ${_session} ${_cmd})
   else
     # Outside of tmux, just start detached session...
-    ${TMUX_CMD} ${TMUX_ARGS} ${_verbose} new-session -d -s ${_session} ${_args} "${*}"
+    ${TMUX_CMD} ${TMUX_ARGS} ${_verbose} new-session -d -s ${_session} ${_args} ${_cmd}
   fi
 }
 
