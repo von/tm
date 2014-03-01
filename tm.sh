@@ -2,7 +2,7 @@
 #
 # tm: Start tmux sessions
 
-TM_VERSION="0.3"
+TM_VERSION="0.4"
 
 TM_SESSION_PATH=${TM_SESSION_PATH:-${HOME}/.tmux/sessions}
 TM_INIT_PATH=${TM_INIT_PATH:-${HOME}/.tmux/init}
