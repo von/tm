@@ -35,15 +35,20 @@ tmux_new_session()
     esac
   done
 
+  local _verbose=""
+  if test ${verbose} == "true" ; then
+    _verbose="-v"
+  fi
+
   local _session=${1} ; shift
 
   if test -n "${TMUX:-}" ; then
     # Inside of tmux, start session and attach so it susequent
     # commands go to it by default.
-    (unset TMUX && ${TMUX_CMD} ${TMUX_ARGS} new-session -d -s ${_session} "${*}")
+    (unset TMUX && ${TMUX_CMD} ${TMUX_ARGS} ${_verbose} new-session -d -s ${_session} "${*}")
   else
     # Outside of tmux, just start detached session...
-    ${TMUX_CMD} ${TMUX_ARGS} new-session -d -s ${_session} ${_args} "${*}"
+    ${TMUX_CMD} ${TMUX_ARGS} ${_verbose} new-session -d -s ${_session} ${_args} "${*}"
   fi
 }
 
@@ -185,6 +190,8 @@ tm_help()
   -K       Kill tmux server.
   -l       List running sessions.
   -ls      List available sessions. Meant for use by completion code.
+  -v       Verbose, turn on logging in tmux.
+  -V       Print version and exit.
 
   With no option to contrary, create or attach to <session name>.
 EOF
@@ -271,6 +278,8 @@ cmd="start"
 # Start independent session?
 independent="false"
 
+verbose="false"
+
 while true; do
   case ${1:-""} in
     -h)
@@ -302,7 +311,12 @@ while true; do
       shift
       ;;
     -v)
-      echo "tm version ${TM_VERSION}"
+      verbose="true"
+      shift
+      ;;
+    -V)
+      echo "tm ${TM_VERSION}"
+      tmux -V
       shift
       exit 0
       ;;
