@@ -249,6 +249,7 @@ tm_start()
           echo "Cannot establish independant session inside of tmux"
           exit 1
         fi
+        echo "Creating new independent session for ${_session}"
         _target_session=$(tm_new_independant_session ${_session})
         echo "Attaching to ${_session} via ${_target_session}"
         _session=${_target_session}
