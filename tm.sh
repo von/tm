@@ -27,7 +27,7 @@ tmux_new_session()
         ;;
       -t)
         _args="-t ${2}"
-        shift [M R5
+        shift 2
         ;;
       *)
         break
