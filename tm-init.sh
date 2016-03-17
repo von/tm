@@ -48,7 +48,7 @@ if test -n "${TMUX}" ; then
 
     # Only do tmux initialization once (not again if bashrc is resourced)
     if test -z "${TMUX_INIT_COMPLETE}" ; then
-        TMUX_INIT_COMPLETE=1
+        export TMUX_INIT_COMPLETE=1
 
         TMUX_INIT_PATH=${HOME}/.tmux/init/
         TMUX_SESSION_INIT_FILE=${TMUX_INIT_PATH}/$(tmux_session_name)
