@@ -130,14 +130,6 @@ cmd()  # Send a command to current pane
   ${TMUX_CMD} ${TMUX_ARGS} send-keys -t ${_last_window} "${_cmd}" "Enter"
 }
 
-default_path()  # Configure the default directory for new panes
-{
-  # Usage: default_directory <path>
-  # XXX This doesn't seem to work reliably.
-  local _path=${*}
-  ${TMUX_CMD} ${TMUX_ARGS} set-option -t ${_session} default-path "${@}"
-}
-
 new_session()  # Create new session
 {
   # Usage: new_session [-n <window-name>] <session name> [<cmd>]
