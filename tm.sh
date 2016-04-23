@@ -2,7 +2,7 @@
 #
 # tm: Start tmux sessions
 
-TM_VERSION="0.5"
+TM_VERSION="0.6"
 
 TM_SESSION_PATH=${TM_SESSION_PATH:-${HOME}/.tmux/sessions}
 TM_INIT_PATH=${TM_INIT_PATH:-${HOME}/.tmux/init}
@@ -135,7 +135,7 @@ default_path()  # Configure the default directory for new panes
   # Usage: default_directory <path>
   # XXX This doesn't seem to work reliably.
   local _path=${*}
-  ${TMUX_CMD} ${TMUX_ARGS} set-option -t ${_session} default-path "${*}"
+  ${TMUX_CMD} ${TMUX_ARGS} set-option -t ${_session} default-path "${@}"
 }
 
 new_session()  # Create new session
@@ -171,13 +171,13 @@ select_window()  # Select given window
 splith()  # split window horizontally
 {
   # Usage: splith [<options>]
-  ${TMUX_CMD} ${TMUX_ARGS} split-window -h -t ${_last_window} "${*:-}"
+  ${TMUX_CMD} ${TMUX_ARGS} split-window -h -t ${_last_window} "${@}"
 }
 
 splitv()  # Split window vertically
 {
   # Usage: splitv [<options>]
-  ${TMUX_CMD} ${TMUX_ARGS} split-window -v -t ${_last_window} "${*:-}"
+  ${TMUX_CMD} ${TMUX_ARGS} split-window -v -t ${_last_window} "${@}"
 }
 
 ######################################################################
