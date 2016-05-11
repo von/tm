@@ -2,7 +2,7 @@
 #
 # tm: Start tmux sessions
 
-TM_VERSION="0.7"
+TM_VERSION="0.8"
 
 TM_SESSION_PATH=${TM_SESSION_PATH:-${HOME}/.tmux/sessions}
 TM_INIT_PATH=${TM_INIT_PATH:-${HOME}/.tmux/init}
@@ -53,10 +53,13 @@ tmux_new_session()
   if test -n "${TMUX:-}" ; then
     # Inside of tmux, start session and attach so it susequent
     # commands go to it by default.
-    (unset TMUX && ${TMUX_CMD} ${TMUX_ARGS} ${_verbose} new-session -d -s ${_session} ${_cmd})
+    (unset TMUX && \
+      ${TMUX_CMD} ${TMUX_ARGS} ${_verbose} \
+        new-session -d -s ${_args} ${_session} ${_cmd})
   else
     # Outside of tmux, just start detached session...
-    ${TMUX_CMD} ${TMUX_ARGS} ${_verbose} new-session -d -s ${_session} ${_args} ${_cmd}
+    ${TMUX_CMD} ${TMUX_ARGS} ${_verbose} \
+      new-session -d -s ${_session} ${_args} ${_cmd}
   fi
 }
 
@@ -134,7 +137,11 @@ new_session()  # Create new session
 {
   # Usage: new_session [-n <window-name>] <session name> [<cmd>]
   tmux_new_session "$@"
-  _last_window=${1}  # XXX, this is broken if window_name given
+  if test ${1} == "-n" ; then
+    _last_window=${2}
+  else
+    _last_window=${1}
+  fi
 }
 
 new_window()  # Create a new window, args as 'tmux new-window'
