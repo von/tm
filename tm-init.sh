@@ -50,10 +50,18 @@ if test -n "${TMUX}" ; then
     if test -z "${TMUX_INIT_COMPLETE}" ; then
         export TMUX_INIT_COMPLETE=1
 
+        # Load window-specific init file if it extists, otherwise try and load
+        # session-specific init file.
         TMUX_INIT_PATH=${HOME}/.tmux/init/
-        TMUX_SESSION_INIT_FILE=${TMUX_INIT_PATH}/$(tmux_session_name)
-        if test -e "${TMUX_SESSION_INIT_FILE}" ; then
-            source ${TMUX_SESSION_INIT_FILE}
-        fi
+        for p in \
+          ${TMUX_INIT_PATH}/$(tmux_window_name) \
+          ${TMUX_INIT_PATH}/$(tmux_session_name) \
+          ; do
+          if test -e "${p}" ; then
+            TMUX_INIT_FILE="${p}"
+            source ${TMUX_INIT_FILE}
+            break
+          fi
+        done
     fi
 fi
