@@ -75,14 +75,16 @@ tm_check_server()
 #   _last_window : the name of the last window created.
 #   _session : the name of session
 
-cmd()  # Send a command to current pane
+# Send a command to current pane
+cmd()
 {
   # Usage: cmd <command to send to window>
   local _cmd=${*}
   ${TMUX_CMD} ${TMUX_ARGS} send-keys -t ${_last_window} "${_cmd}" "Enter"
 }
 
-new_session()  # Create new session
+# Create new session or attach to existing session
+new_session()
 {
   # Usage: new_session <session_name> [<args as 'tmux new-session'>]
   local _session=$1; shift
@@ -128,13 +130,15 @@ new_session()  # Create new session
   fi
 }
 
-new_window()  # Create a new window, args as 'tmux new-window'
+# Create a new window, args as 'tmux new-window'
+new_window()
 {
   # -P = print new window information
   _last_window=$(${TMUX_CMD} ${TMUX_ARGS} new-window -P "${@}")
 }
 
-select_pane()  # Select given pane
+# Select given pane
+select_pane()
 {
   # Usage select_pane <target>
   local _target=${1}
@@ -142,7 +146,8 @@ select_pane()  # Select given pane
   ${TMUX_CMD} ${TMUX_ARGS} select-pane -t ${_session}:.${_target}
 }
 
-select_window()  # Select given window
+# Select given window
+select_window()
 {
   # Usage: select_window <name>
   local _name=${1}
@@ -150,13 +155,15 @@ select_window()  # Select given window
   _last_window=${_name}
 }
 
-splith()  # split window horizontally
+# split window horizontally
+splith()
 {
   # Usage: splith [<options>]
   _last_window=$(${TMUX_CMD} ${TMUX_ARGS} split-window -h -P -t ${_last_window} "${@}")
 }
 
-splitv()  # Split window vertically
+# Split window vertically
+splitv()
 {
   # Usage: splitv [<options>]
   _last_window=$(${TMUX_CMD} ${TMUX_ARGS} split-window -v -P -t ${_last_window} "${@}")
@@ -187,14 +194,16 @@ tm_help()
 EOF
 }
 
-tm_list()  # List running sessions
+# List running sessions
+tm_list()
 {
   _session=${1}
 
   ${TMUX_CMD} ${TMUX_ARGS} -q list-sessions 2> /dev/null | cut -f 1 -d ':'
 }
 
-tm_ls()  # List sessions we have configuration files for
+# List sessions we have configuration files for
+tm_ls()
 {
   (test -d ${TM_CMD_PATH} && cd ${TM_CMD_PATH} && ls -1 ) | \
     grep -v -e "~$" | grep -v -e "^#.*#$" | sort | uniq
