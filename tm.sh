@@ -1,12 +1,12 @@
 #!/bin/bash
 #
-# tm: Start tmux sessions
+# tm: Create new tmux sessions or windows
 
-TM_VERSION="0.8"
+TM_VERSION="0.9"
 
-TM_SESSION_PATH=${TM_SESSION_PATH:-${HOME}/.tmux/sessions}
+TM_CMD_PATH=${TM_CMD_PATH:-${HOME}/.tmux/tm}
 TM_INIT_PATH=${TM_INIT_PATH:-${HOME}/.tmux/init}
-TM_DEFAULT_SESSION="default"
+TM_DEFAULT_CMD="default"
 
 # These can be overridden by ~/.tmux/tmrc
 TMUX_CMD="tmux"
@@ -75,20 +75,6 @@ tmux_attach_session()
   fi
 }
 
-tm_new_session()
-{
-  local _session=${1}
-  local _startup_file=${TM_SESSION_PATH}/${_session}
-
-  echo "Creating new session ${_session}"
-  if test -r ${_startup_file} ; then
-    echo "Configuring using ${_startup_file}"
-    source ${_startup_file} ${_session}
-  else
-    tmux_new_session ${_session}
-  fi
-}
-
 tm_new_independant_session()
 {
   # Create a new independant session attached to given target session
@@ -135,20 +121,54 @@ cmd()  # Send a command to current pane
 
 new_session()  # Create new session
 {
-  # Usage: new_session [-n <window-name>] <session name> [<cmd>]
-  tmux_new_session "$@"
-  if test ${1} == "-n" ; then
-    _last_window=${2}
+  # Usage: new_session <session_name> [<args as 'tmux new-session'>]
+  local _session=$1; shift
+  #_last_window=$(${TMUX_CMD} ${TMUX_ARGS} new-session -P "${@}")
+
+  # Is the session already running?
+  if ${TMUX_CMD} ${TMUX_ARGS} has -t ${_session} > /dev/null 2>&1 ; then
+    # Yes it is...
+    if test ${independent} = "true" ; then
+      # We want a session independent of any session already running.
+      # Does session already have a client?
+      if ${TMUX_CMD} ${TMUX_ARGS} ls | grep ${_session}: | grep "(attached)" > /dev/null ; then
+        # Yes, need to establish new session.
+        if test -n "${TMUX:-}" ; then
+          # No way to clean up if we are inside of tmux since
+          # switch-client returns immediately.
+          echo "Cannot establish independant session inside of tmux"
+          exit 1
+        fi
+        echo "Creating new independent session for ${_session}"
+        _target_session=$(tm_new_independant_session ${_session})
+        echo "Attaching to ${_session} via ${_target_session}"
+        _session=${_target_session}
+      else
+        # Session has no client, attach as normal
+        echo "Attaching to ${_session}"
+      fi
+    else
+      # Don't want independent, attach as normal
+      echo "Attaching to ${_session}"
+    fi
   else
-    _last_window=${1}
+    # Session is not running start it...
+    tmux_new_session ${_session}
+  fi
+
+  tmux_attach_session ${_session}
+
+  # Clean up targetted session if we started it
+  if test -n "${_target_session:-}" ; then
+    echo "Cleaning up ${_target_session}"
+    ${TMUX_CMD} ${TMUX_ARGS} kill-session -t ${_target_session}
   fi
 }
 
 new_window()  # Create a new window, args as 'tmux new-window'
 {
   # -P = print new window information
-  local _args="-P -t ${_session}"
-  _last_window=$(${TMUX_CMD} ${TMUX_ARGS} new-window ${_args} "${@}")
+  _last_window=$(${TMUX_CMD} ${TMUX_ARGS} new-window -P "${@}")
 }
 
 select_pane()  # Select given pane
@@ -163,7 +183,7 @@ select_window()  # Select given window
 {
   # Usage: select_window <name>
   local _name=${1}
-  ${TMUX_CMD} ${TMUX_ARGS} select-window -t ${_session}:${_name}
+  ${TMUX_CMD} ${TMUX_ARGS} select-window -t :${_name}
   _last_window=${_name}
 }
 
@@ -230,47 +250,16 @@ tm_kill_server()
   ${TMUX_CMD} ${TMUX_ARGS} kill-server
 }
 
-tm_start()
+tm_cmd()
 {
-  _session=${1}
+  local _cmd=${1}
+  local _cmd_file=${TM_CMD_PATH}/${_cmd}
 
-  # Is the session already running?
-  if ${TMUX_CMD} ${TMUX_ARGS} has -t ${_session} > /dev/null 2>&1 ; then
-    # Yes it is...
-    if test ${independent} = "true" ; then
-      # We want a session independent of any session already running.
-      # Does session already have a client?
-      if ${TMUX_CMD} ${TMUX_ARGS} ls | grep ${_session}: | grep "(attached)" > /dev/null ; then
-        # Yes, need to establish new session.
-        if test -n "${TMUX:-}" ; then
-          # No way to clean up if we are inside of tmux since
-          # switch-client returns immediately.
-          echo "Cannot establish independant session inside of tmux"
-          exit 1
-        fi
-        echo "Creating new independent session for ${_session}"
-        _target_session=$(tm_new_independant_session ${_session})
-        echo "Attaching to ${_session} via ${_target_session}"
-        _session=${_target_session}
-      else
-        # Session has no client, attach as normal
-        echo "Attaching to ${_session}"
-      fi
-    else
-      # Don't want independent, attach as normal
-      echo "Attaching to ${_session}"
-    fi
+  if test -r ${_cmd_file} ; then
+    source ${_cmd_file} ${_cmd}
   else
-    # Session is not running start it...
-    tm_new_session ${_session}
-  fi
-
-  tmux_attach_session ${_session}
-
-  # Clean up targetted session if we started it
-  if test -n "${_target_session:-}" ; then
-    echo "Cleaning up ${_target_session}"
-    ${TMUX_CMD} ${TMUX_ARGS} kill-session -t ${_target_session}
+    echo "Unknown command \"${_cmd}\""
+    exit 1
   fi
 }
 
@@ -281,7 +270,7 @@ tm_start()
 set -e  # Exit on error
 
 # Command
-cmd="start"
+cmd="cmd"
 
 # Start independent session?
 independent="false"
@@ -343,7 +332,7 @@ if test -r ${TMRC} ; then
   source ${TMRC}
 fi
 
-_session=${1:-${TM_DEFAULT_SESSION}}
+_cmd=${1:-${TM_DEFAULT_CMD}}
 
 case ${cmd} in
   kill)
@@ -362,8 +351,8 @@ case ${cmd} in
     tm_ls ${_session}
     ;;
 
-  start)
-    tm_start ${_session}
+  cmd)
+    tm_cmd ${_cmd}
     ;;
 
   *)
