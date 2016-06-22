@@ -5,7 +5,6 @@
 TM_VERSION="0.9"
 
 TM_CMD_PATH=${TM_CMD_PATH:-${HOME}/.tmux/tm}
-TM_INIT_PATH=${TM_INIT_PATH:-${HOME}/.tmux/init}
 TM_DEFAULT_CMD="default"
 
 # These can be overridden by ~/.tmux/tmrc
@@ -197,8 +196,7 @@ tm_list()  # List running sessions
 
 tm_ls()  # List sessions we have configuration files for
 {
-  (test -d ${TM_SESSION_PATH} && cd ${TM_SESSION_PATH} && ls -1 ;
-    test -d ${TM_INIT_PATH} && cd ${TM_INIT_PATH} && ls -1) | \
+  (test -d ${TM_CMD_PATH} && cd ${TM_CMD_PATH} && ls -1 ) | \
     grep -v -e "~$" | grep -v -e "^#.*#$" | sort | uniq
 }
 
