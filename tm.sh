@@ -17,50 +17,14 @@ tmux_new_session()
   # Start new detached session. Unsets TMUX so may be called inside of
   # tmux session.
   #
-  # Usage: [-t <target session>] [-n <window name>] <session> [<cmd>]
-  local _args=""
-  while true ; do
-    case ${1:-} in
-      -n)
-        _args="-n ${2}"
-        shift 2
-        ;;
-      -t)
-        _args="-t ${2}"
-        shift 2
-        ;;
-      *)
-        break
-        ;;
-    esac
-  done
-
+  # Usage: tmux_new_session [<args if to new-session>]
   local _verbose=""
   if test ${verbose} == "true" ; then
     _verbose="-v"
   fi
-
-  local _session=${1} ; shift
-  local _cmd=""
-
-  # Turn args into one quoted string
-  # Kudos: http://stackoverflow.com/a/8723305/197789
-  local _arg
-  for _arg in "$@" ; do
-    _cmd="$_cmd \"${_arg//\"/\\\"}\""  #" (vim syntax fix)
-  done
-
-  if test -n "${TMUX:-}" ; then
-    # Inside of tmux, start session and attach so it susequent
-    # commands go to it by default.
-    (unset TMUX && \
-      ${TMUX_CMD} ${TMUX_ARGS} ${_verbose} \
-        new-session -d -s ${_args} ${_session} ${_cmd})
-  else
-    # Outside of tmux, just start detached session...
+  (unset TMUX && \
     ${TMUX_CMD} ${TMUX_ARGS} ${_verbose} \
-      new-session -d -s ${_session} ${_args} ${_cmd}
-  fi
+    new-session -d -s "$@")
 }
 
 tmux_attach_session()
