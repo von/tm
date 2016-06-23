@@ -16,14 +16,34 @@ tmux_new_session()
   # Start new detached session. Unsets TMUX so may be called inside of
   # tmux session.
   #
-  # Usage: tmux_new_session [<args if to new-session>]
+  # Usage: [-t <target session>] [-n <window name>] <session> [<cmd>]
+  local _args=""
+  while true ; do
+    case ${1:-} in
+      -n)
+        _args="-n ${2}"
+        shift 2
+        ;;
+      -t)
+        _args="-t ${2}"
+        shift 2
+        ;;
+      *)
+        break
+        ;;
+    esac
+  done
+
   local _verbose=""
   if test ${verbose} == "true" ; then
     _verbose="-v"
   fi
+
+  local _session=${1} ; shift
+
   (unset TMUX && \
     ${TMUX_CMD} ${TMUX_ARGS} ${_verbose} \
-    new-session -d -s "$@")
+      new-session -d -s ${_session} ${_args} "$@")
 }
 
 tmux_attach_session()
@@ -45,17 +65,20 @@ tm_new_independant_session()
   # This is an improved version of:
   # https://mutelight.org/practical-tmux
   #
-  # Usage: <session>
+  # Usage: <target session>
   # outputs: <new session>
+
+  local target_session=$1; shift
 
   # Find unused session name by appending incrementing index
   # Starting with 2 seems most natural, but value is arbitrary
   _index=2
-  until tmux_new_session -t ${_session} ${_session}-${_index} 2>/dev/null ; do
+  until tmux_new_session -t ${target_session} \
+    ${target_session}-${_index} 2>/dev/null \
+    ; do
     _index=$((_index+1))
   done
-  _target_session=${_session}-${_index}
-  echo ${_target_session}
+  echo ${target_session}-${_index}
 }
 
 tm_check_server()
