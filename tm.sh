@@ -96,7 +96,6 @@ tm_check_server()
 #
 # These functions use the following globals:
 #   _last_window : the name of the last window created.
-#   _session : the name of session
 
 # Send a command to current pane
 cmd()
@@ -166,7 +165,7 @@ select_pane()
   # Usage select_pane <target>
   local _target=${1}
   # Select given pane in our session, current window
-  ${TMUX_CMD} ${TMUX_ARGS} select-pane -t ${_session}:.${_target}
+  ${TMUX_CMD} ${TMUX_ARGS} select-pane -t :.${_target}
 }
 
 # Select given window
