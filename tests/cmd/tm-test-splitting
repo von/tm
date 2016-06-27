@@ -1,0 +1,9 @@
+# -*- mode: shell-script; -*-
+# Cmd file for testing splitting
+
+tm_new_session -n testing tm-testing
+tm_splith
+tm_splitv
+
+# Check for appropriate number of panes
+test $(tmux list-panes -t $TM_LAST_WINDOW | wc -l ) -eq 3

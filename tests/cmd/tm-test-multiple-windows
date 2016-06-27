@@ -1,0 +1,10 @@
+# -*- mode: shell-script; -*-
+# Cmd file for tm.sh tests
+
+tm_new_session -n testing tm-testing
+tm_new_window -n testing-2
+
+# Make sure expected windows exist
+test $(tmux list-windows -t $TM_SESSION | wc -l ) -eq 2
+tm_check_window testing
+tm_check_window testing-2

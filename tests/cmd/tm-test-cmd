@@ -1,0 +1,8 @@
+# -*- mode: shell-script; -*-
+# Cmd file for 'tm_cmd'
+
+tm_new_session -n testing tm-testing
+tm_cmd "tmux split-window"
+
+# It takes a while for the input to be processed, so checking for new
+# pane is a race condition.
