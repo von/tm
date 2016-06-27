@@ -4,6 +4,7 @@
 
 TM_VERSION="0.9"
 
+TMRC=${TMRC:-${HOME}/.tmux/tmrc}
 TM_CMD_PATH=${TM_CMD_PATH:-${HOME}/.tmux/tm}
 TM_DEFAULT_CMD="default"
 
@@ -11,184 +12,182 @@ TM_DEFAULT_CMD="default"
 TMUX_CMD="tmux"
 TMUX_ARGS=""
 
-tmux_new_session()
+######################################################################
+#
+# These functions meant to be called from inside sourced command script
+#
+# These functions use the following globals:
+#   TM_SESSION : the name of the last session created
+#   TM_WINDOW : the name of the last window created
+#   TM_PANE : the name of the last pane created
+
+# Send text, presumably a command, to current pane
+# Usage: tm_cmd <text to send>
+tm_cmd()
 {
-  # Start new detached session. Unsets TMUX so may be called inside of
-  # tmux session.
-  #
-  # Usage: [-t <target session>] [-n <window name>] <session> [<cmd>]
+  local _cmd=${*}
+  # IF $TM_PANE is not set, use "+0" for current pane
+  ${TMUX_CMD} ${TMUX_ARGS} send-keys -t ${TM_LAST_PANE:-+0} "${_cmd}" "Enter"
+}
+
+# Create new session and attach to it
+# Usage: new_session <session_name> [<args as 'tmux new-session'>]
+# If session already exists, returns 1
+tm_new_session()
+{
+  # Leading colon means silent errors, script will handle them
+  # Colon after a parameter, means that parameter has an argument in $OPTARG
   local _args=""
-  while true ; do
-    case ${1:-} in
-      -n)
-        _args="-n ${2}"
-        shift 2
-        ;;
-      -t)
-        _args="-t ${2}"
-        shift 2
-        ;;
-      *)
-        break
-        ;;
+  while getopts ":ADEPc:F:n:s:t:x:y:" opt; do
+    case $opt in
+      A|d|D|E|P) _args+=" -${opt}" ;;
+      d) ;; # Ignore, we created detached as part of process
+      c|F|n|t|x|y) _args+=" -${opt} ${OPTARG}" ;;
+      s) ;;  # Ignore, set name from other arguments
     esac
   done
 
-  local _verbose=""
-  if test ${verbose} == "true" ; then
-    _verbose="-v"
-  fi
+  shift $(($OPTIND - 1))
+  local _session=$1; shift
+  tm_check_session ${_session} && return 1 || true
 
-  local _session=${1} ; shift
-
+  # Start new detached session. Unsets TMUX so may be called inside of
+  # tmux session.
   (unset TMUX && \
-    ${TMUX_CMD} ${TMUX_ARGS} ${_verbose} \
+    ${TMUX_CMD} ${TMUX_ARGS} ${verbose+-v} \
       new-session -d -s ${_session} ${_args} "$@")
+
+  tm_select_session ${_session}
+  TM_SESSION="${_session}"
+  TM_LAST_WINDOW="${_session}"
+  TM_LAST_PANE="${_session}"
 }
 
-tmux_attach_session()
-{
-  # Attach to existing session.
-  # If in tmux already, does a 'switch-client' instead
-  local _session=${1}
-  if test -n "${TMUX:-}" ; then
-    ${TMUX_CMD} ${TMUX_ARGS} switch-client -t ${_session}
-  else
-    ${TMUX_CMD} ${TMUX_ARGS} attach-session -t ${_session}
-  fi
-}
-
+# Create a new independant session attached to given target session
+# Usage: <target session>
+#
+# This is an improved version of:
+# https://mutelight.org/practical-tmux
 tm_new_independant_session()
 {
-  # Create a new independant session attached to given target session
-  #
-  # This is an improved version of:
-  # https://mutelight.org/practical-tmux
-  #
-  # Usage: <target session>
-  # outputs: <new session>
-
   local target_session=$1; shift
 
   # Find unused session name by appending incrementing index
   # Starting with 2 seems most natural, but value is arbitrary
-  _index=2
+  local _index=2
   until tmux_new_session -t ${target_session} \
     ${target_session}-${_index} 2>/dev/null \
     ; do
     _index=$((_index+1))
   done
-  echo ${target_session}-${_index}
+  local _session=${target_session}-${_index}
+  tm_select_session ${_session}
+  TM_SESSION="${_session}"
+  TM_LAST_WINDOW="${_session}"
+  TM_LAST_PANE="${_session}"
 }
 
+# Return 0 if server already running, else 1
+# Usage: tm_check_server
 tm_check_server()
 {
-  # Return 0 if server already running, else 1
   if ${TMUX_CMD} ${TMUX_ARGS} ls >/dev/null 2>&1 ; then
     return 0
   fi
   return 1
 }
 
-######################################################################
-#
-# These functions meant to be called from inside sourced startup script
-#
-# These functions use the following globals:
-#   _last_window : the name of the last window created.
-
-# Send a command to current pane
-cmd()
+# Return 0 if session already exists, else 1
+# Usage: tm_check_session <session name>
+tm_check_session()
 {
-  # Usage: cmd <command to send to window>
-  local _cmd=${*}
-  ${TMUX_CMD} ${TMUX_ARGS} send-keys -t ${_last_window} "${_cmd}" "Enter"
+  local _session_name=${1}; shift
+  ${TMUX_CMD} ${TMUX_ARGS} list-sessions -F "#S" | \
+    grep -q -x "${_session_name}" && return 0
+  return 1
 }
 
-# Create new session or attach to existing session
-new_session()
+# Return 0 if window already exists in current session, else 1
+# Usage: tm_check_window <window name>
+tm_check_window()
 {
-  # Usage: new_session <session_name> [<args as 'tmux new-session'>]
-  local _session=$1; shift
-  #_last_window=$(${TMUX_CMD} ${TMUX_ARGS} new-session -P "${@}")
-
-  # Is the session already running?
-  if ${TMUX_CMD} ${TMUX_ARGS} has -t ${_session} > /dev/null 2>&1 ; then
-    # Yes it is...
-    if test ${independent} = "true" ; then
-      # We want a session independent of any session already running.
-      # Does session already have a client?
-      if ${TMUX_CMD} ${TMUX_ARGS} ls | grep ${_session}: | grep "(attached)" > /dev/null ; then
-        # Yes, need to establish new session.
-        if test -n "${TMUX:-}" ; then
-          # No way to clean up if we are inside of tmux since
-          # switch-client returns immediately.
-          echo "Cannot establish independant session inside of tmux"
-          exit 1
-        fi
-        echo "Creating new independent session for ${_session}"
-        _target_session=$(tm_new_independant_session ${_session})
-        echo "Attaching to ${_session} via ${_target_session}"
-        _session=${_target_session}
-      else
-        # Session has no client, attach as normal
-        echo "Attaching to ${_session}"
-      fi
-    else
-      # Don't want independent, attach as normal
-      echo "Attaching to ${_session}"
-    fi
-  else
-    # Session is not running start it...
-    tmux_new_session ${_session}
-  fi
-
-  tmux_attach_session ${_session}
-
-  # Clean up targetted session if we started it
-  if test -n "${_target_session:-}" ; then
-    echo "Cleaning up ${_target_session}"
-    ${TMUX_CMD} ${TMUX_ARGS} kill-session -t ${_target_session}
-  fi
+  local _window_name=${1}; shift
+  ${TMUX_CMD} ${TMUX_ARGS} list-windows -t ${TM_SESSION} -F "#W" \
+    | grep -q -x "${_window_name}" && return 0
+  return 1
 }
 
-# Create a new window, args as 'tmux new-window'
-new_window()
+# Create a new window
+# Usage: tm_new_window <args as to 'tmux new-window'>
+tm_new_window()
 {
   # -P = print new window information
-  _last_window=$(${TMUX_CMD} ${TMUX_ARGS} new-window -P "${@}")
+  TM_LAST_WINDOW=$(${TMUX_CMD} ${TMUX_ARGS} new-window -P \
+    -t ${TM_SESSION} "${@}")
+  TM_LAST_PANE=${TM_LAST_WINDOW}
 }
 
 # Select given pane
-select_pane()
+# Usage: tm_select_pane <target pane>
+tm_select_pane()
 {
-  # Usage select_pane <target>
   local _target=${1}
   # Select given pane in our session, current window
   ${TMUX_CMD} ${TMUX_ARGS} select-pane -t :.${_target}
+  TM_LAST_PANE=${_target}
 }
 
 # Select given window
-select_window()
+# Usage: tm_select_window <wondow_name>
+tm_select_window()
 {
-  # Usage: select_window <name>
   local _name=${1}
   ${TMUX_CMD} ${TMUX_ARGS} select-window -t :${_name}
-  _last_window=${_name}
+  TM_LAST_WINDOW=${_name}
+  TM_LAST_PANE=${TM_LAST_WINDOW}
+}
+
+
+# Select or attach to given session
+# Usage: select_session <session name>
+tm_select_session()
+{
+  local _session=${1}
+  tm_check_session ${_session} || return 1
+
+  # If in tmux already, does a 'switch-client' instead
+  if test -n "${TMUX:-}" ; then
+    ${TMUX_CMD} ${TMUX_ARGS} switch-client -t ${_session}
+  else
+    ${TMUX_CMD} ${TMUX_ARGS} attach-session -t ${_session}
+  fi
+  TM_SESSION=${_session}
+  TM_LAST_WINDOW=${_session}
+  TM_LAST_PANE=${_session}
 }
 
 # split window horizontally
-splith()
+# Usage: tm_splith [<options>]
+tm_splith()
 {
-  # Usage: splith [<options>]
-  _last_window=$(${TMUX_CMD} ${TMUX_ARGS} split-window -h -P -t ${_last_window} "${@}")
+  TM_LAST_PANE=$(${TMUX_CMD} ${TMUX_ARGS} split-window -h -P \
+    -t ${TM_LAST_PANE} "${@}")
 }
 
 # Split window vertically
-splitv()
+# Usage: tm_splitv [<options>]
+tm_splitv()
 {
-  # Usage: splitv [<options>]
-  _last_window=$(${TMUX_CMD} ${TMUX_ARGS} split-window -v -P -t ${_last_window} "${@}")
+  TM_LAST_PANE=$(${TMUX_CMD} ${TMUX_ARGS} split-window -v -P \
+    -t ${TM_LAST_PANE} "${@}")
+}
+
+# Kill given session
+# Usage: tm_kill_session <session_name>
+tm_kill_session()
+{
+  local _session=${1}
+  ${TMUX_CMD} ${TMUX_ARGS} kill-session -t "${_session}"
 }
 
 ######################################################################
@@ -196,7 +195,7 @@ splitv()
 # Top-level commands
 #
 
-tm_help()
+cmd_help()
 {
   cat <<EOF
   Usage: $0 [<options>] [<session name>]
@@ -217,33 +216,29 @@ EOF
 }
 
 # List running sessions
-tm_list()
+cmd_list()
 {
-  _session=${1}
-
   ${TMUX_CMD} ${TMUX_ARGS} -q list-sessions 2> /dev/null | cut -f 1 -d ':'
 }
 
 # List sessions we have configuration files for
-tm_ls()
+cmd_ls()
 {
   (test -d ${TM_CMD_PATH} && cd ${TM_CMD_PATH} && ls -1 ) | \
     grep -v -e "~$" | grep -v -e "^#.*#$" | sort | uniq
 }
 
-tm_kill()
+cmd_kill()
 {
-  _session=${1}
-
-  ${TMUX_CMD} ${TMUX_ARGS} kill-session -t "${1}" || exit 1
+  tm_kill_session "${1}"
 }
 
-tm_kill_server()
+cmd_kill_server()
 {
   ${TMUX_CMD} ${TMUX_ARGS} kill-server
 }
 
-tm_cmd()
+cmd_cmd()
 {
   local _cmd=${1}
   local _cmd_file=${TM_CMD_PATH}/${_cmd}
@@ -265,15 +260,12 @@ set -e  # Exit on error
 # Command
 cmd="cmd"
 
-# Start independent session?
-independent="false"
-
 verbose="false"
 
 while true; do
   case ${1:-""} in
     -h)
-      tm_help
+      cmd_help
       exit 0
       ;;
     -l)  # List running sessions
@@ -282,14 +274,6 @@ while true; do
       ;;
     -ls)  # List sessions we have configuration files for
       cmd="ls"
-      shift
-      ;;
-    -i)
-      independent="true"
-      shift
-      ;;
-    -I)
-      independent="false"
       shift
       ;;
     -k)
@@ -320,32 +304,30 @@ while true; do
   esac
 done
 
-TMRC=${HOME}/.tmux/tmrc
 if test -r ${TMRC} ; then
   source ${TMRC}
 fi
 
-_cmd=${1:-${TM_DEFAULT_CMD}}
-
 case ${cmd} in
   kill)
-    tm_kill ${_session}
+    test $# -lt 1 && { echo "Session name required." ; exit 1 ; }
+    cmd_kill ${1}
     ;;
 
   kill-server)
-    tm_kill_server
+    cmd_kill_server
     ;;
 
   list)
-    tm_list ${_session}
+    cmd_list
     ;;
 
   ls)
-    tm_ls ${_session}
+    cmd_ls
     ;;
 
   cmd)
-    tm_cmd ${_cmd}
+    cmd_cmd ${1:-${TM_DEFAULT_CMD}}
     ;;
 
   *)
