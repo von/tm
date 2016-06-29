@@ -54,7 +54,7 @@ tm_new_session()
   # Start new detached session. Unsets TMUX so may be called inside of
   # tmux session.
   (unset TMUX && \
-    ${TMUX_CMD} ${TMUX_ARGS} ${verbose+-v} \
+    ${TMUX_CMD} ${TMUX_ARGS} \
       new-session -d -s ${_session} ${_args} "$@")
 
   tm_select_session ${_session}
@@ -286,6 +286,7 @@ while true; do
       ;;
     -v)
       verbose="true"
+      TMUX_ARGS+=" -v"
       shift
       ;;
     -V)
