@@ -27,7 +27,8 @@ tm_cmd()
 {
   local _cmd=${*}
   # IF $TM_PANE is not set, use "+0" for current pane
-  ${TMUX_CMD} ${TMUX_ARGS} send-keys -t ${TM_LAST_PANE:-+0} "${_cmd}" "Enter"
+  ${TMUX_CMD} ${TMUX_ARGS} send-keys \
+    ${TM_LAST_PANE:+-t ${TM_LAST_PANE}} "${_cmd}" "Enter"
 }
 
 # Create new session and attach to it
@@ -112,7 +113,8 @@ tm_check_session()
 tm_check_window()
 {
   local _window_name=${1}; shift
-  ${TMUX_CMD} ${TMUX_ARGS} list-windows -t ${TM_SESSION} -F "#W" \
+  ${TMUX_CMD} ${TMUX_ARGS} list-windows \
+    ${TM_SESSION:+-t ${TM_SESSION}} -F "#W" \
     | grep -q -x "${_window_name}" && return 0
   return 1
 }
@@ -123,7 +125,7 @@ tm_new_window()
 {
   # -P = print new window information
   TM_LAST_WINDOW=$(${TMUX_CMD} ${TMUX_ARGS} new-window -P \
-    -t ${TM_SESSION} "${@}")
+    ${TM_SESSION:+-t ${TM_SESSION}} "${@}")
   TM_LAST_PANE=${TM_LAST_WINDOW}
 }
 
@@ -171,7 +173,7 @@ tm_select_session()
 tm_splith()
 {
   TM_LAST_PANE=$(${TMUX_CMD} ${TMUX_ARGS} split-window -h -P \
-    -t ${TM_LAST_PANE} "${@}")
+    ${TM_LAST_PANE:+-t ${TM_LAST_PANE}} "${@}")
 }
 
 # Split window vertically
@@ -179,7 +181,7 @@ tm_splith()
 tm_splitv()
 {
   TM_LAST_PANE=$(${TMUX_CMD} ${TMUX_ARGS} split-window -v -P \
-    -t ${TM_LAST_PANE} "${@}")
+    ${TM_LAST_PANE:+-t ${TM_LAST_PANE}} "${@}")
 }
 
 # Kill given session
