@@ -260,10 +260,16 @@ set -e  # Exit on error
 # Command
 cmd="cmd"
 
+debug="false"
 verbose="false"
 
 while true; do
   case ${1:-""} in
+    -d)
+      echo "Debug mode activated."
+      debug="true"
+      shift
+      ;;
     -h)
       cmd_help
       exit 0
@@ -304,6 +310,8 @@ while true; do
       ;;
   esac
 done
+
+test ${debug} = "true" && set -x
 
 if test -r ${TMRC} ; then
   source ${TMRC}
