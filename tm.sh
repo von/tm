@@ -119,6 +119,15 @@ tm_check_window()
   return 1
 }
 
+# Return current session name
+# Usage: tm_current_session_name
+# Outputs session name as string
+tm_current_session_name()
+{
+  # Just list session of current session's windows, take first
+  tmux list-windows ${TM_SESSION:+-t ${TM_SESSION}} -F "#S" | head -1
+}
+
 # Create a new window
 # Usage: tm_new_window <args as to 'tmux new-window'>
 tm_new_window()

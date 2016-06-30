@@ -52,3 +52,8 @@ teardown()
   run ${TM} tm-test-cmd
   [ "$status" -eq 0 ]
 }
+
+@test "tm.sh tm-test-session-name" {
+  run ${TM} tm-test-session-name
+  [ "$status" -eq 0 ]
+}
