@@ -144,7 +144,8 @@ tm_select_pane()
 {
   local _target=${1}
   # Select given pane in our session, current window
-  ${TMUX_CMD} ${TMUX_ARGS} select-pane -t :.${_target}
+  ${TMUX_CMD} ${TMUX_ARGS} select-pane \
+    -t ${TM_SESSION:+${TM_SESSION}}:${TM_LAST_WINDOW:+${TM_LAST_WINDOW}}.${_target}
   TM_LAST_PANE=${_target}
 }
 
@@ -153,7 +154,8 @@ tm_select_pane()
 tm_select_window()
 {
   local _name=${1}
-  ${TMUX_CMD} ${TMUX_ARGS} select-window -t :${_name}
+  ${TMUX_CMD} ${TMUX_ARGS} select-window \
+    -t ${TM_SESSION:+${TM_SESSION}}:${_name}
   TM_LAST_WINDOW=${_name}
   TM_LAST_PANE=${TM_LAST_WINDOW}
 }
