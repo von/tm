@@ -2,7 +2,7 @@
 #
 # tm: Create new tmux sessions or windows
 
-TM_VERSION="0.9"
+TM_VERSION="0.9.1"
 
 TMRC=${TMRC:-${HOME}/.tmux/tmrc}
 TM_CMD_PATH=${TM_CMD_PATH:-${HOME}/.tmux/tm}
@@ -145,7 +145,7 @@ tm_select_pane()
   local _target=${1}
   # Select given pane in our session, current window
   ${TMUX_CMD} ${TMUX_ARGS} select-pane \
-    -t ${TM_SESSION:+${TM_SESSION}}:${TM_LAST_WINDOW:+${TM_LAST_WINDOW}}.${_target}
+    -t .${_target}
   TM_LAST_PANE=${_target}
 }
 
