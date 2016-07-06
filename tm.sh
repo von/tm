@@ -2,7 +2,7 @@
 #
 # tm: Create new tmux sessions or windows
 
-TM_VERSION="0.9.1"
+TM_VERSION="0.9.2"
 
 TMRC=${TMRC:-${HOME}/.tmux/tmrc}
 TM_CMD_PATH=${TM_CMD_PATH:-${HOME}/.tmux/tm}
@@ -128,6 +128,16 @@ tm_current_session_name()
   tmux list-windows ${TM_SESSION:+-t ${TM_SESSION}} -F "#S" | head -1
 }
 
+# Return current window name
+# Usage: tm_current_window_name
+# Outputs window name as string
+tm_current_window_name()
+{
+  # Just list session of current window's panes, take first
+  ${TMUX_CMD} ${TMUX_ARGS} list-panes \
+    ${TM_LAST_PANE:+-t ${TM_LAST_PANE}} -F "#W" | head -1
+}
+
 # Create a new window
 # Usage: tm_new_window <args as to 'tmux new-window'>
 tm_new_window()
@@ -147,6 +157,30 @@ tm_select_pane()
   ${TMUX_CMD} ${TMUX_ARGS} select-pane \
     -t .${_target}
   TM_LAST_PANE=${_target}
+}
+
+# Toggle window
+#   If window does not exist, create with given command
+#   If window does exist and is not current window, select it
+#   If window does exist and is current window, jump to last window
+tm_toggle_window()
+{
+  local _name=${1} ; shift
+  # Does target_window already exist?
+  if tm_check_window "${_name}" ; then
+    # Is target_window the current winow?
+    if test $(tm_current_window_name) = "${_name}" ; then
+      # Yes, switch back to last window
+      ${TMUX_CMD} ${TMUX_ARGS} last-window
+      TM_LAST_WINDOW=$(tm_current_window_name)
+    else
+      # No, switch to target window.
+      tm_select_window "${_name}"
+    fi
+  else
+    # No, create window and switch to it.
+    tm_new_window -n "${tw_name}" "${@}"
+  fi
 }
 
 # Select given window
