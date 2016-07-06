@@ -2,7 +2,7 @@
 #
 # tm: Create new tmux sessions or windows
 
-TM_VERSION="0.9.2"
+TM_VERSION="0.9.3"
 
 TMRC=${TMRC:-${HOME}/.tmux/tmrc}
 TM_CMD_PATH=${TM_CMD_PATH:-${HOME}/.tmux/tm}
@@ -125,7 +125,8 @@ tm_check_window()
 tm_current_session_name()
 {
   # Just list session of current session's windows, take first
-  tmux list-windows ${TM_SESSION:+-t ${TM_SESSION}} -F "#S" | head -1
+  ${TMUX_CMD} ${TMUX_ARGS} list-windows \
+    ${TM_SESSION:+-t ${TM_SESSION}} -F "#S" | head -1
 }
 
 # Return current window name
