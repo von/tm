@@ -2,7 +2,7 @@
 #
 # tm: Create new tmux sessions or windows
 
-TM_VERSION="0.10.0"
+TM_VERSION="0.10.1"
 
 TMRC=${TMRC:-${HOME}/.tmux/tmrc}
 TM_CMD_PATH=${TM_CMD_PATH:-${HOME}/.tmux/tm}
@@ -194,7 +194,7 @@ tm_toggle_window()
     fi
   else
     # No, create window and switch to it.
-    tm_new_window -n "${tw_name}" "${@}"
+    tm_new_window -n "${_name}" "${@}"
   fi
 }
 
