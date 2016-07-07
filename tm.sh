@@ -2,7 +2,7 @@
 #
 # tm: Create new tmux sessions or windows
 
-TM_VERSION="0.9.3"
+TM_VERSION="0.10.0"
 
 TMRC=${TMRC:-${HOME}/.tmux/tmrc}
 TM_CMD_PATH=${TM_CMD_PATH:-${HOME}/.tmux/tm}
@@ -22,13 +22,27 @@ TMUX_ARGS=""
 #   TM_PANE : the name of the last pane created
 
 # Send text, presumably a command, to current pane
-# Usage: tm_cmd <text to send>
-tm_cmd()
+# Usage: tm_send <text to send>
+tm_send()
 {
   local _cmd=${*}
-  # IF $TM_PANE is not set, use "+0" for current pane
   ${TMUX_CMD} ${TMUX_ARGS} send-keys \
     ${TM_LAST_PANE:+-t ${TM_LAST_PANE}} "${_cmd}" "Enter"
+}
+
+# Source command file
+# Usage: tm_cmd <filename>
+tm_cmd()
+{
+  local _cmd=${1}
+  local _cmd_file=${TM_CMD_PATH}/${_cmd}
+
+  if test -r ${_cmd_file} ; then
+    source ${_cmd_file} ${_cmd}
+  else
+    echo "Unknown command \"${_cmd}\""
+    return 1
+  fi
 }
 
 # Create new session and attach to it
@@ -288,15 +302,7 @@ cmd_kill_server()
 
 cmd_cmd()
 {
-  local _cmd=${1}
-  local _cmd_file=${TM_CMD_PATH}/${_cmd}
-
-  if test -r ${_cmd_file} ; then
-    source ${_cmd_file} ${_cmd}
-  else
-    echo "Unknown command \"${_cmd}\""
-    exit 1
-  fi
+  tm_cmd "${@}"
 }
 
 ######################################################################

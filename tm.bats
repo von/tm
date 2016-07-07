@@ -48,8 +48,8 @@ teardown()
   [ "$status" -eq 0 ]
 }
 
-@test "tm.sh tm-test-cmd" {
-  run ${TM} tm-test-cmd
+@test "tm.sh tm-test-send" {
+  run ${TM} tm-test-send
   [ "$status" -eq 0 ]
 }
 
