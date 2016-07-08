@@ -5,5 +5,5 @@ tm_new_session -n testing tm-testing
 
 # Check for session with appropriate number of windows
 tm_check_session tm-testing
-test $(tmux list-windows -t $TM_SESSION | wc -l ) -eq 1
+test $(tmux ${TMUX_ARGS} list-windows -t $TM_SESSION | wc -l ) -eq 1
 tm_check_window testing

@@ -2,15 +2,15 @@
 #
 # tm: Create new tmux sessions or windows
 
-TM_VERSION="0.10.1"
+TM_VERSION="0.11.0"
 
 TMRC=${TMRC:-${HOME}/.tmux/tmrc}
 TM_CMD_PATH=${TM_CMD_PATH:-${HOME}/.tmux/tm}
 TM_DEFAULT_CMD="default"
 
 # These can be overridden by ~/.tmux/tmrc
-TMUX_CMD="tmux"
-TMUX_ARGS=""
+TMUX_CMD=${TMUX_CMD:-"tmux"}
+TMUX_ARGS=${TMUX_ARGS:-""}
 
 ######################################################################
 #
@@ -26,6 +26,9 @@ TMUX_ARGS=""
 tm_send()
 {
   local _cmd=${*}
+
+  tm_check_server || { echo "No tmux server running." 1>&2 ; return 1 ; }
+
   ${TMUX_CMD} ${TMUX_ARGS} send-keys \
     ${TM_LAST_PANE:+-t ${TM_LAST_PANE}} "${_cmd}" "Enter"
 }
@@ -45,7 +48,7 @@ tm_cmd()
   fi
 }
 
-# Create new session and attach to it
+# Create new session
 # Usage: new_session <session_name> [<args as 'tmux new-session'>]
 # If session already exists, returns 1
 tm_new_session()
@@ -71,8 +74,6 @@ tm_new_session()
   (unset TMUX && \
     ${TMUX_CMD} ${TMUX_ARGS} \
       new-session -d -s ${_session} ${_args} "$@")
-
-  tm_select_session ${_session}
   TM_SESSION="${_session}"
   TM_LAST_WINDOW="${_session}"
   TM_LAST_PANE="${_session}"
@@ -117,6 +118,7 @@ tm_check_server()
 tm_check_session()
 {
   local _session_name=${1}; shift
+  tm_check_server || return 1
   ${TMUX_CMD} ${TMUX_ARGS} list-sessions -F "#S" | \
     grep -q -x "${_session_name}" && return 0
   return 1
@@ -127,6 +129,9 @@ tm_check_session()
 tm_check_window()
 {
   local _window_name=${1}; shift
+
+  tm_check_server || return 1
+
   ${TMUX_CMD} ${TMUX_ARGS} list-windows \
     ${TM_SESSION:+-t ${TM_SESSION}} -F "#W" \
     | grep -q -x "${_window_name}" && return 0
@@ -136,8 +141,10 @@ tm_check_window()
 # Return current session name
 # Usage: tm_current_session_name
 # Outputs session name as string
+# Returns 1 if there is no current session
 tm_current_session_name()
 {
+  tm_check_server || return 1
   # Just list session of current session's windows, take first
   ${TMUX_CMD} ${TMUX_ARGS} list-windows \
     ${TM_SESSION:+-t ${TM_SESSION}} -F "#S" | head -1
@@ -148,6 +155,7 @@ tm_current_session_name()
 # Outputs window name as string
 tm_current_window_name()
 {
+  tm_check_server || return ""
   # Just list session of current window's panes, take first
   ${TMUX_CMD} ${TMUX_ARGS} list-panes \
     ${TM_LAST_PANE:+-t ${TM_LAST_PANE}} -F "#W" | head -1
@@ -157,6 +165,7 @@ tm_current_window_name()
 # Usage: tm_new_window <args as to 'tmux new-window'>
 tm_new_window()
 {
+  tm_check_server || { echo "No tmux server running." 1>&2 ; return 1 ; }
   # -P = print new window information
   TM_LAST_WINDOW=$(${TMUX_CMD} ${TMUX_ARGS} new-window -P \
     ${TM_SESSION:+-t ${TM_SESSION}} "${@}")
@@ -168,6 +177,7 @@ tm_new_window()
 tm_select_pane()
 {
   local _target=${1}
+  tm_check_server || { echo "No tmux server running." 1>&2 ; return 1 ; }
   # Select given pane in our session, current window
   ${TMUX_CMD} ${TMUX_ARGS} select-pane \
     -t .${_target}
@@ -181,6 +191,7 @@ tm_select_pane()
 tm_toggle_window()
 {
   local _name=${1} ; shift
+  tm_check_server || { echo "No tmux server running." 1>&2 ; return 1 ; }
   # Does target_window already exist?
   if tm_check_window "${_name}" ; then
     # Is target_window the current winow?
@@ -203,6 +214,7 @@ tm_toggle_window()
 tm_select_window()
 {
   local _name=${1}
+  tm_check_server || { echo "No tmux server running." 1>&2 ; return 1 ; }
   ${TMUX_CMD} ${TMUX_ARGS} select-window \
     -t ${TM_SESSION:+${TM_SESSION}}:${_name}
   TM_LAST_WINDOW=${_name}
@@ -215,14 +227,12 @@ tm_select_window()
 tm_select_session()
 {
   local _session=${1}
+  tm_check_server || { echo "No tmux server running." 1>&2 ; return 1 ; }
   tm_check_session ${_session} || return 1
 
-  # If in tmux already, does a 'switch-client' instead
-  if test -n "${TMUX:-}" ; then
-    ${TMUX_CMD} ${TMUX_ARGS} switch-client -t ${_session}
-  else
-    ${TMUX_CMD} ${TMUX_ARGS} attach-session -t ${_session}
-  fi
+  # Use attach-session as it works if we have a tmux session
+  # already running or not.
+  ${TMUX_CMD} ${TMUX_ARGS} attach-session -t ${_session}
   TM_SESSION=${_session}
   TM_LAST_WINDOW=${_session}
   TM_LAST_PANE=${_session}
@@ -232,6 +242,7 @@ tm_select_session()
 # Usage: tm_splith [<options>]
 tm_splith()
 {
+  tm_check_server || { echo "No tmux server running." 1>&2 ; return 1 ; }
   TM_LAST_PANE=$(${TMUX_CMD} ${TMUX_ARGS} split-window -h -P \
     ${TM_LAST_PANE:+-t ${TM_LAST_PANE}} "${@}")
 }
@@ -240,6 +251,7 @@ tm_splith()
 # Usage: tm_splitv [<options>]
 tm_splitv()
 {
+  tm_check_server || { echo "No tmux server running." 1>&2 ; return 1 ; }
   TM_LAST_PANE=$(${TMUX_CMD} ${TMUX_ARGS} split-window -v -P \
     ${TM_LAST_PANE:+-t ${TM_LAST_PANE}} "${@}")
 }
@@ -248,6 +260,7 @@ tm_splitv()
 # Usage: tm_kill_session <session_name>
 tm_kill_session()
 {
+  tm_check_server || { echo "No tmux server running." 1>&2 ; return 1 ; }
   local _session=${1}
   ${TMUX_CMD} ${TMUX_ARGS} kill-session -t "${_session}"
 }
@@ -297,7 +310,7 @@ cmd_kill()
 
 cmd_kill_server()
 {
-  ${TMUX_CMD} ${TMUX_ARGS} kill-server
+  ${TMUX_CMD} ${TMUX_ARGS} kill-server >& /dev/null
 }
 
 cmd_cmd()
