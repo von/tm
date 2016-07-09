@@ -2,11 +2,15 @@
 #
 # tm: Create new tmux sessions or windows
 
-TM_VERSION="0.11.0"
+TM_VERSION="0.12.0"
 
 TMRC=${TMRC:-${HOME}/.tmux/tmrc}
 TM_CMD_PATH=${TM_CMD_PATH:-${HOME}/.tmux/tm}
 TM_DEFAULT_CMD="default"
+
+# Session and window name to use if starting tmux server
+TM_START_WINDOW_NAME=${TM_START_WINDOW_NAME:-tm-window}
+TM_START_SESSION_NAME=${TM_START_SESSION_NAME:-tm-session}
 
 # These can be overridden by ~/.tmux/tmrc
 TMUX_CMD=${TMUX_CMD:-"tmux"}
@@ -14,93 +18,32 @@ TMUX_ARGS=${TMUX_ARGS:-""}
 
 ######################################################################
 #
-# These functions meant to be called from inside sourced command script
-#
-# These functions use the following globals:
-#   TM_SESSION : the name of the last session created
-#   TM_WINDOW : the name of the last window created
-#   TM_PANE : the name of the last pane created
-
-# Send text, presumably a command, to current pane
-# Usage: tm_send <text to send>
-tm_send()
-{
-  local _cmd=${*}
-
-  tm_check_server || { echo "No tmux server running." 1>&2 ; return 1 ; }
-
-  ${TMUX_CMD} ${TMUX_ARGS} send-keys \
-    ${TM_LAST_PANE:+-t ${TM_LAST_PANE}} "${_cmd}" "Enter"
-}
-
 # Source command file
-# Usage: tm_cmd <filename>
+# Usage: tm_cmd [-D] <filename>
+#   -D  Don't check for runnig sever
 tm_cmd()
 {
+  local _check_server="1"
+  test ${1} = "-D" && { shift ; _check_server="0" ; }
   local _cmd=${1}
-  local _cmd_file=${TM_CMD_PATH}/${_cmd}
+  case ${_cmd} in
+    */*|/*)  # Path to file
+      # Tmux needs full path
+      local _cmd_file="$(cd "$(dirname "$_cmd")"; pwd)/$(basename "$_cmd")"
+      test -r "${_cmd_file}" || \
+        { echo "No such file: \"${_cmd_file}\"" ; return 1 ; }
+      ;;
+    *)
+      local _cmd_file=${TM_CMD_PATH}/${_cmd}
+      test -r "${_cmd_file}" || \
+        { echo "Unknown command \"${_cmd}\"" ; return 1 ; }
+      ;;
+  esac
 
-  if test -r ${_cmd_file} ; then
-    source ${_cmd_file} ${_cmd}
-  else
-    echo "Unknown command \"${_cmd}\""
-    return 1
+  if test ${_check_server} -eq 1 ; then
+    tm_check_server || tm_start_server "${_cmd}"
   fi
-}
-
-# Create new session
-# Usage: new_session <session_name> [<args as 'tmux new-session'>]
-# If session already exists, returns 1
-tm_new_session()
-{
-  # Leading colon means silent errors, script will handle them
-  # Colon after a parameter, means that parameter has an argument in $OPTARG
-  local _args=""
-  while getopts ":ADEPc:F:n:s:t:x:y:" opt; do
-    case $opt in
-      A|d|D|E|P) _args+=" -${opt}" ;;
-      d) ;; # Ignore, we created detached as part of process
-      c|F|n|t|x|y) _args+=" -${opt} ${OPTARG}" ;;
-      s) ;;  # Ignore, set name from other arguments
-    esac
-  done
-
-  shift $(($OPTIND - 1))
-  local _session=$1; shift
-  tm_check_session ${_session} && return 1 || true
-
-  # Start new detached session. Unsets TMUX so may be called inside of
-  # tmux session.
-  (unset TMUX && \
-    ${TMUX_CMD} ${TMUX_ARGS} \
-      new-session -d -s ${_session} ${_args} "$@")
-  TM_SESSION="${_session}"
-  TM_LAST_WINDOW="${_session}"
-  TM_LAST_PANE="${_session}"
-}
-
-# Create a new independant session attached to given target session
-# Usage: <target session>
-#
-# This is an improved version of:
-# https://mutelight.org/practical-tmux
-tm_new_independant_session()
-{
-  local target_session=$1; shift
-
-  # Find unused session name by appending incrementing index
-  # Starting with 2 seems most natural, but value is arbitrary
-  local _index=2
-  until tmux_new_session -t ${target_session} \
-    ${target_session}-${_index} 2>/dev/null \
-    ; do
-    _index=$((_index+1))
-  done
-  local _session=${target_session}-${_index}
-  tm_select_session ${_session}
-  TM_SESSION="${_session}"
-  TM_LAST_WINDOW="${_session}"
-  TM_LAST_PANE="${_session}"
+  ${TMUX_CMD} ${TMUX_ARGS} source-file ${_cmd_file}
 }
 
 # Return 0 if server already running, else 1
@@ -112,6 +55,17 @@ tm_check_server()
   fi
   return 1
 }
+
+# Start the tmux server
+# Usage: tm_start_server [<first_command>]
+# Uses the tm-start-server command, which must start a session
+tm_start_server()
+{
+  tm_check_server && { echo "Attempt to start already running server." >&2 ; return 1 ; }
+  ${TMUX_CMD} ${TMUX_ARGS} new-session -d \
+    -n ${TM_START_WINDOW_NAME} -s ${TM_START_SESSION_NAME}
+  tm_check_server || { echo "${TM_START_SERVER_CMD} failed to start server." >&2 ; return 1 ; }
+  }
 
 # Return 0 if session already exists, else 1
 # Usage: tm_check_session <session name>
@@ -161,17 +115,6 @@ tm_current_window_name()
     ${TM_LAST_PANE:+-t ${TM_LAST_PANE}} -F "#W" | head -1
 }
 
-# Create a new window
-# Usage: tm_new_window <args as to 'tmux new-window'>
-tm_new_window()
-{
-  tm_check_server || { echo "No tmux server running." 1>&2 ; return 1 ; }
-  # -P = print new window information
-  TM_LAST_WINDOW=$(${TMUX_CMD} ${TMUX_ARGS} new-window -P \
-    ${TM_SESSION:+-t ${TM_SESSION}} "${@}")
-  TM_LAST_PANE=${TM_LAST_WINDOW}
-}
-
 # Select given pane
 # Usage: tm_select_pane <target pane>
 tm_select_pane()
@@ -182,31 +125,6 @@ tm_select_pane()
   ${TMUX_CMD} ${TMUX_ARGS} select-pane \
     -t .${_target}
   TM_LAST_PANE=${_target}
-}
-
-# Toggle window
-#   If window does not exist, create with given command
-#   If window does exist and is not current window, select it
-#   If window does exist and is current window, jump to last window
-tm_toggle_window()
-{
-  local _name=${1} ; shift
-  tm_check_server || { echo "No tmux server running." 1>&2 ; return 1 ; }
-  # Does target_window already exist?
-  if tm_check_window "${_name}" ; then
-    # Is target_window the current winow?
-    if test $(tm_current_window_name) = "${_name}" ; then
-      # Yes, switch back to last window
-      ${TMUX_CMD} ${TMUX_ARGS} last-window
-      TM_LAST_WINDOW=$(tm_current_window_name)
-    else
-      # No, switch to target window.
-      tm_select_window "${_name}"
-    fi
-  else
-    # No, create window and switch to it.
-    tm_new_window -n "${_name}" "${@}"
-  fi
 }
 
 # Select given window
@@ -220,7 +138,6 @@ tm_select_window()
   TM_LAST_WINDOW=${_name}
   TM_LAST_PANE=${TM_LAST_WINDOW}
 }
-
 
 # Select or attach to given session
 # Usage: select_session <session name>
@@ -236,33 +153,6 @@ tm_select_session()
   TM_SESSION=${_session}
   TM_LAST_WINDOW=${_session}
   TM_LAST_PANE=${_session}
-}
-
-# split window horizontally
-# Usage: tm_splith [<options>]
-tm_splith()
-{
-  tm_check_server || { echo "No tmux server running." 1>&2 ; return 1 ; }
-  TM_LAST_PANE=$(${TMUX_CMD} ${TMUX_ARGS} split-window -h -P \
-    ${TM_LAST_PANE:+-t ${TM_LAST_PANE}} "${@}")
-}
-
-# Split window vertically
-# Usage: tm_splitv [<options>]
-tm_splitv()
-{
-  tm_check_server || { echo "No tmux server running." 1>&2 ; return 1 ; }
-  TM_LAST_PANE=$(${TMUX_CMD} ${TMUX_ARGS} split-window -v -P \
-    ${TM_LAST_PANE:+-t ${TM_LAST_PANE}} "${@}")
-}
-
-# Kill given session
-# Usage: tm_kill_session <session_name>
-tm_kill_session()
-{
-  tm_check_server || { echo "No tmux server running." 1>&2 ; return 1 ; }
-  local _session=${1}
-  ${TMUX_CMD} ${TMUX_ARGS} kill-session -t "${_session}"
 }
 
 ######################################################################
@@ -313,6 +203,11 @@ cmd_kill_server()
   ${TMUX_CMD} ${TMUX_ARGS} kill-server >& /dev/null
 }
 
+cmd_start_server()
+{
+  tm_start_server
+}
+
 cmd_cmd()
 {
   tm_cmd "${@}"
@@ -345,7 +240,7 @@ while true; do
       cmd="list"
       shift
       ;;
-    -ls)  # List sessions we have configuration files for
+    -ls)  # List commands we have configuration files for
       cmd="ls"
       shift
       ;;
@@ -355,6 +250,10 @@ while true; do
       ;;
     -K)
       cmd="kill-server"
+      shift
+      ;;
+    -S)
+      cmd="start-server"
       shift
       ;;
     -v)
@@ -392,6 +291,10 @@ case ${cmd} in
 
   kill-server)
     cmd_kill_server
+    ;;
+
+  start-server)
+    cmd_start_server
     ;;
 
   list)
