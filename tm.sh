@@ -28,6 +28,8 @@ tm_cmd()
   local _cmd=${1}
   case ${_cmd} in
     */*|/*)  # Path to file
+      test -r "${_cmd}" || \
+        { echo "No such file: \"${_cmd}\"" ; return 1 ; }
       # Tmux needs full path
       local _cmd_file="$(cd "$(dirname "$_cmd")"; pwd)/$(basename "$_cmd")"
       test -r "${_cmd_file}" || \
@@ -42,6 +44,21 @@ tm_cmd()
 
   if test ${_check_server} -eq 1 ; then
     tm_check_server || tm_start_server "${_cmd}"
+  fi
+  tm_process_cmd_file "${_cmd_file}"
+}
+
+# Process a command file
+# Usage: tm_process_cmd_file <filename>
+# Handles "@tm-if-not: <tmux command>" directive
+tm_process_cmd_file()
+{
+  local _cmd_file="${1}"
+  local _tmux_cmd=$(sed -n "s/^#@tm-if-not: \(.*\)$/\1/p" ${_cmd_file})
+  if test -n "${_tmux_cmd}" ; then
+    if ${TMUX_CMD} ${TMUX_ARGS} ${_tmux_cmd} >& /dev/null ; then
+      return 0
+    fi
   fi
   ${TMUX_CMD} ${TMUX_ARGS} source-file ${_cmd_file}
 }
@@ -66,94 +83,6 @@ tm_start_server()
     -n ${TM_START_WINDOW_NAME} -s ${TM_START_SESSION_NAME}
   tm_check_server || { echo "${TM_START_SERVER_CMD} failed to start server." >&2 ; return 1 ; }
   }
-
-# Return 0 if session already exists, else 1
-# Usage: tm_check_session <session name>
-tm_check_session()
-{
-  local _session_name=${1}; shift
-  tm_check_server || return 1
-  ${TMUX_CMD} ${TMUX_ARGS} list-sessions -F "#S" | \
-    grep -q -x "${_session_name}" && return 0
-  return 1
-}
-
-# Return 0 if window already exists in current session, else 1
-# Usage: tm_check_window <window name>
-tm_check_window()
-{
-  local _window_name=${1}; shift
-
-  tm_check_server || return 1
-
-  ${TMUX_CMD} ${TMUX_ARGS} list-windows \
-    ${TM_SESSION:+-t ${TM_SESSION}} -F "#W" \
-    | grep -q -x "${_window_name}" && return 0
-  return 1
-}
-
-# Return current session name
-# Usage: tm_current_session_name
-# Outputs session name as string
-# Returns 1 if there is no current session
-tm_current_session_name()
-{
-  tm_check_server || return 1
-  # Just list session of current session's windows, take first
-  ${TMUX_CMD} ${TMUX_ARGS} list-windows \
-    ${TM_SESSION:+-t ${TM_SESSION}} -F "#S" | head -1
-}
-
-# Return current window name
-# Usage: tm_current_window_name
-# Outputs window name as string
-tm_current_window_name()
-{
-  tm_check_server || return ""
-  # Just list session of current window's panes, take first
-  ${TMUX_CMD} ${TMUX_ARGS} list-panes \
-    ${TM_LAST_PANE:+-t ${TM_LAST_PANE}} -F "#W" | head -1
-}
-
-# Select given pane
-# Usage: tm_select_pane <target pane>
-tm_select_pane()
-{
-  local _target=${1}
-  tm_check_server || { echo "No tmux server running." 1>&2 ; return 1 ; }
-  # Select given pane in our session, current window
-  ${TMUX_CMD} ${TMUX_ARGS} select-pane \
-    -t .${_target}
-  TM_LAST_PANE=${_target}
-}
-
-# Select given window
-# Usage: tm_select_window <wondow_name>
-tm_select_window()
-{
-  local _name=${1}
-  tm_check_server || { echo "No tmux server running." 1>&2 ; return 1 ; }
-  ${TMUX_CMD} ${TMUX_ARGS} select-window \
-    -t ${TM_SESSION:+${TM_SESSION}}:${_name}
-  TM_LAST_WINDOW=${_name}
-  TM_LAST_PANE=${TM_LAST_WINDOW}
-}
-
-# Select or attach to given session
-# Usage: select_session <session name>
-tm_select_session()
-{
-  local _session=${1}
-  tm_check_server || { echo "No tmux server running." 1>&2 ; return 1 ; }
-  tm_check_session ${_session} || return 1
-
-  # Use attach-session as it works if we have a tmux session
-  # already running or not.
-  ${TMUX_CMD} ${TMUX_ARGS} attach-session -t ${_session}
-  TM_SESSION=${_session}
-  TM_LAST_WINDOW=${_session}
-  TM_LAST_PANE=${_session}
-}
 
 ######################################################################
 #
