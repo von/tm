@@ -1,5 +1,0 @@
-# -*- mode: shell-script; -*-
-# Cmd file for testing tm_current_session_name
-
-tm_new_session -n testing tm-testing
-test $(tm_current_session_name) = "tm-testing"
