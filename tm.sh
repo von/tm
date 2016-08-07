@@ -20,7 +20,7 @@ TMUX_ARGS=${TMUX_ARGS:-""}
 #
 # Source command file
 # Usage: tm_cmd [-D] <filename>
-#   -D  Don't check for runnig sever
+#   -D  Don't check for running sever
 tm_cmd()
 {
   local _check_server="1"
