@@ -2,7 +2,7 @@
 #
 # tm: Create new tmux sessions or windows
 
-TM_VERSION="0.12.0"
+TM_VERSION="0.13.0"
 
 TMRC=${TMRC:-${HOME}/.tmux/tmrc}
 TM_CMD_PATH=${TM_CMD_PATH:-${HOME}/.tmux/tm}
@@ -51,9 +51,20 @@ tm_cmd()
 # Process a command file
 # Usage: tm_process_cmd_file <filename>
 # Handles "@tm-if-not: <tmux command>" directive
+# Handles "@tm-attach: <tmux command>" directive
 tm_process_cmd_file()
 {
   local _cmd_file="${1}"
+  if test -z "${TMUX}" ; then
+    # We are not attached. Run specialized command to do so if given,
+    # otherwise, plain old 'tmux attach'
+    local _attach_cmd=$(sed -n "s/^#@tm-attach: \(.*\)$/\1/p" ${_cmd_file})
+    if test -n "${_attach_cmd}" ; then
+      ${TMUX_CMD} ${TMUX_ARGS} ${_attach_cmd}
+    else
+      ${TMUX_CMD} ${TMUX_ARGS} attach
+    fi
+  fi
   local _tmux_cmd=$(sed -n "s/^#@tm-if-not: \(.*\)$/\1/p" ${_cmd_file})
   if test -n "${_tmux_cmd}" ; then
     if ${TMUX_CMD} ${TMUX_ARGS} ${_tmux_cmd} >& /dev/null ; then
