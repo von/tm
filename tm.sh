@@ -4,16 +4,26 @@
 
 TM_VERSION="0.13.0"
 
+# Default tmrc file
 TMRC=${TMRC:-${HOME}/.tmux/tmrc}
+
+######################################################################
+# These can be overridden by tmrc file
+
+# Path to tm command files
 TM_CMD_PATH=${TM_CMD_PATH:-${HOME}/.tmux/tm}
+
+# Default tm command if none given
 TM_DEFAULT_CMD="default"
 
 # Session and window name to use if starting tmux server
 TM_START_WINDOW_NAME=${TM_START_WINDOW_NAME:-tm-window}
 TM_START_SESSION_NAME=${TM_START_SESSION_NAME:-tm-session}
 
-# These can be overridden by ~/.tmux/tmrc
+# tmux binary name
 TMUX_CMD=${TMUX_CMD:-"tmux"}
+
+# tmux arguments
 TMUX_ARGS=${TMUX_ARGS:-""}
 
 ######################################################################

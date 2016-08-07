@@ -1,21 +1,27 @@
 tm
 ==========
 
-tm is a tmux session manager. For the latest version, please see its
-github page: https://github.com/von/tm
+tm is a program for running tmux commands. For the latest version, please see
+its github page: https://github.com/von/tm
 
 tm does the following:
 
 1) Allows scripted starts of sessions like [tmuxinator][] or
 [teamocil][]
 
-2) Starts a session if it is not running, or attaches to a running
-session, optionally with a new independent session.
+2) Allows for the scripts creation of new windows or panes.
 
-tm uses bash scripts for all of the tasks, allow the user a great deal
-of flexibility and power. tm provides helper functions to automate
-common tmux actions to ease writing these scripts. No configuration is
-needed to start using tm.
+3) Starts the tmux server if it isn't running.
+
+4) Allows for the running of a tmux command if run unattached.
+
+5) Allows for a command that if it succeed, skips the rest of the
+command script, so if a session exists and can be switched to, its creation is
+skipped.
+
+tm uses augmented tmux source files for all of its command. These
+are standard tmux source files that contain conditional commands
+in the comments that are interpreted by the tm script.
 
 Unlike tmux, tm can be used inside of a tmux session, allowing it to
 be used to switch or create sessions from the command-line easily.
@@ -23,98 +29,70 @@ be used to switch or create sessions from the command-line easily.
 Usage
 ----------
 
-    tm [<options>] [<session name>]
+    tm [<options>] [<command name>]
 
-If *session name* is not provided, the contents of the
-*TM_DEFAULT_SESSION* environment variable is used; if that variable is
-not set, the name "default" is used.
+If `command name` is not provided, the contents of the
+`$TM_DEFAULT_CMD` environment variable is used; if that variable is
+not set, the command `default` is used.
 
 The following options are also supported:
 
-'-h' Print help and exit.
+ * `-h` Print help and exit.
 
-'-i` When Attaching to an existing session, do so by creating a new
-session that targets the desired session so that it is independent
-(has its own view).  See the section "Attaching to Running Sessions."
+ * `-V` Print tm version number and exit.
 
-'-I' When Attaching to an existing session, do so directly without
-creating an independent session. This is the default.  See the section
-"Attaching to Running Sessions."
+ * `-d` Run in debug mode.
 
-'-k' Kill the given session. This is equivalent to 'tmux kill-session
--t *session name*'.
+ * `-v` Run in verbose mode.
 
-'-K' Kill the tmux server and exit.
+ * `-k` Kill the given session. This is equivalent to `tmux kill-session
+-t <session name>`.
 
-'-l' List all running sessions and exit. This is equivalent to 'tmux list-sessions'.
+ * `-K` Kill the tmux server and exit.
 
-`-ls` List all available session start up files (see session on "Scripted Sessions") and
-exit. This is intended for use with auto-completion.
+ * `-l` List all running sessions and exit. This is equivalent to
+'tmux list-sessions'.
 
-Scripted Sessions
+ * `-ls` List all available command files. This is intended for use with
+auto-completion.
+
+ * `-S` Start the tmux server.
+
+The `command name` can be one of two forms:
+
+1) If it contains a slash, it will be treated as an absolute or relative path
+to a file to be used.
+
+2) Otherwise, it should be a file in the path specified by `$TM_CMD_PATH` if
+set or `~/.tmux/tm/` otherwise.
+
+Command Files
 ----------
 
-If tm starts a session and ~/.tmux/sessions/*session name* exists, it
-is invoked after the session is started and can configure the session
-by creating windows, splitting windows, running commands in panes,
-etc.
+Command files should be files suitable for use with `tmux source-file`
+with the following special commands (that are comments as far as tmux is
+concerned):
 
-The script is a bash shell script with some helper functions defined
-as follows:
+ * `#@tm-attach: <tmux command>` If the command is run whn not attached to a
+tmux session the given `tmux command` will be executed.
 
-`new_session [-n <window name>] <session name> [<cmd>]`
-
-This must be the first command in the file to create the session.
-It may optionally specify the name and command to be run in the
-initial window created.
-
-`cmd <command...>`
-
-Send all arguments to the currently selected pane as key strokes. A
-carriage return will be added. (Wrapper around `tmux send-keys`)
-
-`default_path <path>`
-
-Set the default path for new panes/windows for the current session.
-
-`new_window [<args>]`
-
-Create a new window. (Wrapper around `tmux new-window`)
-
-`select_pane <pane>`
-
-Select the given pane in the current window. (Wrapper around `tmux
-select-pane`)
-
-`select_window <name>`
-
-Cause the named pane to have focus. select_ commands must be the last
-things run in the script to be effective. (Wrapper around `tmux
-select-window`)
-
-`splith [<options>]`
-
-Split the current window horizontally. Any options will be passed to
-the tmux `split-window` command. (Wrapper around `tmux split -h`)
-
-`splitv [<options>]`
-
-Split the current window vertically. Any options will be passed to
-the tmux `split-window` command. (Wrapper around `tmux split -v`)
+ * `#@tm-if-not: <tmux command>` If present, `tmux command` is executed and if
+it succeeds (returns zero) then the rest of the command script is not run. This
+allows for trying to switch to a session before creating it.
 
 Init Script
 ----------
 
-If you source 'tm-init.sh' in your bash or zshrc startup, this script
-will look for ~/.tmux/init/*session name* and if it exists, source
-it. This allows every shell started in a session to run some common
-initialization code to, e.g., change the working directory, set up the
-environment, run a command.
+If you source `tm-init.sh` in your bash or zshrc startup, this script
+will look for `~/.tmux/init/*window name*` or `~/.tmux/init/*session name*` in
+that order, and if either exists, source it. This allows every shell started in
+a window or session to run some common initialization code to, e.g., change the
+working directory, set up the environment, run a command.
 
 You probably want to source this file late in your shell
 initialization after your PATH and other configuration is complete.
 
-'tm-init.sh' also provides some functions for use in a shell running
+`tm-init.sh` also provides some functions for use in a shell running
 in tmux:
 
 `tmux_session_name`
@@ -136,76 +114,76 @@ Sets the title of the tmux pane containing the shell.
 Example session script.
 ----------
 
-    # Create two windows, the first split into top and bottom panes, the
-    # second into left and right.
-    new_session -n win1 example
-    cmd cd ~/develop
-    splitv
-    cmd cd /tmp
+    # Switch to or create session "default"
+    #
+    # If we're not attached, try attaching to "default"
+    #@tm-attach: new-session -t default
+    #
+    # Try switching to session, if this succeeds, then we'rd done.
+    #@tm-if-not: switch-client -t default
+    #
+    # Create session "default" and initial windows
+    new-session -s default -n default
+    split-window -h
+    # Use send-keys so we run reattach-to-user-namespace
+    new-window -n vifm
+    send-keys "vifm" "Enter"
+    new-window -n tasks
+    send-keys "vit" "Enter"
+    # Select initial pane in initial window
+    select-window -t default:default
+    select-pane -t 0
 
-    new_window win2
-    splith
-
-    # Focus on first window, top pane
-    # (Can use window name if you don't automatically rename them)
-    select_window 0
-    select_pane top
-
-Attaching to Running Sessions
+Attaching
 ----------
 
-If tm is run with the name of a session that is already running, but
-has no clients attached, it will simply be attached to.
+If tm is run when not attached to a tmux session it will try to
+attach. By default it will run `tmux attach` but a more specific
+command can be specified using `#@tm-attach:` in a command file.
 
-If tm is run with the name of a session that is already running and
-the `-i` option is not specified, it will simply attach.
-
-If tm is run with `-i` and the target session exists, a new
-independent session will be created that is attached to the target
-session and the new session will be attached to, giving the client
-freedom from other clients to view windows independently.  The new
-session will be named *session name-N* where N is a number such that
-the name is unique. When the client detaches, the independent session
-will be cleaned up (killed).
-
-Running Inside of tmux
+Starting the tmux server
 --------
-You can run tm inside or outside of tmux and it will behave the
-same. If you run it inside, it will create or attach to new sessions
-on the existing server.
 
-If you run tm outside of tmux, it will start the server if needed (see
-the previous section) and start or attach to the specified session as
-appropriate.
-
-The only difference is you cannot create independent sessions from
-inside of tmux, so if you specify `-i` and a new session is needed,
-you will get an error. (The reason for this is that there is no way to
-clean up the independent session in that case.)
+If tm is run and a tmux server isn't running, it will start one.
+A session will be created as part of this process with the name
+`tm-session`. This can be overridden by the enironment variable
+`$TM_START_SESSION_NAME`.
 
 ~/.tmux/tmrc
 ------
 
-If `~/.tmux/tmrc` exists it will be sourced by tm. tmrc can define
-functions that can be called in session scripts or set other
-environment variables.
+If `~/.tmux/tmrc` exists it will be sourced by tm. This can be
+used to override the following tm variables:
 
-The variable *TMUX_ARGS* may be set to specify arguments to be passed
-to tmux when called.
+    # Path to tm command files
+    TM_CMD_PATH=${TM_CMD_PATH:-${HOME}/.tmux/tm}
+
+    # Default tm command if none given
+    TM_DEFAULT_CMD="default"
+
+    # Session and window name to use if starting tmux server
+    TM_START_WINDOW_NAME=${TM_START_WINDOW_NAME:-tm-window}
+    TM_START_SESSION_NAME=${TM_START_SESSION_NAME:-tm-session}
+
+    # tmux binary name
+    TMUX_CMD=${TMUX_CMD:-"tmux"}
+
+    # tmux arguments
+    TMUX_ARGS=${TMUX_ARGS:-""}
 
 Bash Auto-Completion
 ------
 
-If you source bash_completion.sh you will get auto-completion with
+If you source `bash_completion.sh` you will get auto-completion with
 bash. That is, `tm <tab>` will list both all running sessions you can
 attach to and all sessions that tm knows about based on start up scripts.
 
 ZSH Auto-Completion
 ------
 
-The file '\_tm' provides autocompletion for zsh. To utilize it, place
-the file in a directory which is included in your 'fpath',
-e.g. assuming '\_tm' is in '~/tm/':
+The file `_tm` provides autocompletion for zsh. To utilize it, place
+the file in a directory which is included in your `fpath`,
+e.g. assuming `_tm` is in `~/tm/`:
 
     fpath=( ~/tm/ $path)
 
