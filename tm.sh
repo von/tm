@@ -2,7 +2,7 @@
 #
 # tm: Create new tmux sessions or windows
 
-TM_VERSION="0.13.0"
+TM_VERSION="0.13.1"
 
 # Default tmrc file
 TMRC=${TMRC:-${HOME}/.tmux/tmrc}
@@ -116,13 +116,13 @@ cmd_help()
   Usage: $0 [<options>] [<session name>]
 
   Options:
+  -d       Turn on debugging.
   -h       Print help and exit.
-  -i       If attaching, attach independantly.
-  -I       If attaching, do not attach independantly.
   -k       Kill <session name>.
   -K       Kill tmux server.
   -l       List running sessions.
   -ls      List available sessions. Meant for use by completion code.
+  -S       Start server.
   -v       Verbose, turn on logging in tmux.
   -V       Print version and exit.
 
