@@ -65,23 +65,29 @@ tm_cmd()
 tm_process_cmd_file()
 {
   local _cmd_file="${1}"
-  if test -z "${TMUX}" ; then
-    # We are not attached. Run specialized command to do so if given,
-    # otherwise, plain old 'tmux attach'
-    local _attach_cmd=$(sed -n "s/^#@tm-attach: \(.*\)$/\1/p" ${_cmd_file})
-    if test -n "${_attach_cmd}" ; then
-      ${TMUX_CMD} ${TMUX_ARGS} ${_attach_cmd}
-    else
-      ${TMUX_CMD} ${TMUX_ARGS} attach
-    fi
-  fi
   local _tmux_cmd=$(sed -n "s/^#@tm-if-not: \(.*\)$/\1/p" ${_cmd_file})
+  local _attach_cmd=$(sed -n "s/^#@tm-attach: \(.*\)$/\1/p" ${_cmd_file})
   if test -n "${_tmux_cmd}" ; then
     if ${TMUX_CMD} ${TMUX_ARGS} ${_tmux_cmd} >& /dev/null ; then
+      tm_check_attach
       return 0
     fi
   fi
   ${TMUX_CMD} ${TMUX_ARGS} source-file ${_cmd_file}
+  tm_check_attach
+}
+
+# Attach to tmux if needed. Use <attach command> if given, otherwise
+# "attach-session"
+# Usage: tm_check_attach [<attach command>]
+tm_check_attach()
+{
+  local _attach_cmd=${1:-attach-session}
+  if test -z "${TMUX}" ; then
+    # We are not attached. Run specialized command to do so if given,
+    # otherwise, plain old 'tmux attach'
+    ${TMUX_CMD} ${TMUX_ARGS} ${_attach_cmd}
+  fi
 }
 
 # Return 0 if server already running, else 1
