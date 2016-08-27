@@ -124,11 +124,12 @@ cmd_help()
   Options:
   -d       Turn on debugging.
   -h       Print help and exit.
+  -i       If attaching, attach independantly.
+  -I       If attaching, do not attach independantly.
   -k       Kill <session name>.
   -K       Kill tmux server.
   -l       List running sessions.
   -ls      List available sessions. Meant for use by completion code.
-  -S       Start server.
   -v       Verbose, turn on logging in tmux.
   -V       Print version and exit.
 
