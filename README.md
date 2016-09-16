@@ -76,7 +76,7 @@ concerned):
  * `#@tm-attach: <tmux command>` If the command is run whn not attached to a
 tmux session the given `tmux command` will be executed.
 
- * `#@tm-if-not: <tmux command>` If present, `tmux command` is executed and if
+ * `#@tm-try: <tmux command>` If present, `tmux command` is executed and if
 it succeeds (returns zero) then the rest of the command script is not run. This
 allows for trying to switch to a session before creating it.
 
@@ -120,7 +120,7 @@ Example session script.
     #@tm-attach: new-session -t default
     #
     # Try switching to session, if this succeeds, then we'rd done.
-    #@tm-if-not: switch-client -t default
+    #@tm-try: switch-client -t default
     #
     # Create session "default" and initial windows
     new-session -s default -n default

@@ -2,7 +2,7 @@
 #
 # tm: Create new tmux sessions or windows
 
-TM_VERSION="0.13.1"
+TM_VERSION="0.14.0"
 
 # Default tmrc file
 TMRC=${TMRC:-${HOME}/.tmux/tmrc}
@@ -60,34 +60,31 @@ tm_cmd()
 
 # Process a command file
 # Usage: tm_process_cmd_file <filename>
-# Handles "@tm-if-not: <tmux command>" directive
+# Handles "@tm-try: <tmux command>" directive
 # Handles "@tm-attach: <tmux command>" directive
 tm_process_cmd_file()
 {
   local _cmd_file="${1}"
-  local _tmux_cmd=$(sed -n "s/^#@tm-if-not: \(.*\)$/\1/p" ${_cmd_file})
+  local _try_cmd=$(sed -n "s/^#@tm-try: \(.*\)$/\1/p" ${_cmd_file})
   local _attach_cmd=$(sed -n "s/^#@tm-attach: \(.*\)$/\1/p" ${_cmd_file})
-  if test -n "${_tmux_cmd}" ; then
-    if ${TMUX_CMD} ${TMUX_ARGS} ${_tmux_cmd} >& /dev/null ; then
-      tm_check_attach
-      return 0
+  if test -n "${TMUX}" ; then
+    # We are attached, tm-try try command and return if succeeds.
+    if test -n "${_try_cmd}" ; then
+      ${TMUX_CMD} ${TMUX_ARGS} ${_try_cmd} >& /dev/null && return 0
+      # tm-try command failed, fall through to sourcing command file.
     fi
+  else
+    # We are not attached, try to attach if we have a tm-attach command
+    if test -n "${_attach_cmd}" ; then
+      ${TMUX_CMD} ${TMUX_ARGS} ${_attach_cmd} >& /dev/null && return 0
+    fi
+    # Fall back to attaching to tm's session
+    ${TMUX_CMD} ${TMUX_ARGS} \
+      attach-session -t ${TM_START_SESSION_NAME} \; \
+      source-file ${_cmd_file}
+    return $?
   fi
   ${TMUX_CMD} ${TMUX_ARGS} source-file ${_cmd_file}
-  tm_check_attach
-}
-
-# Attach to tmux if needed. Use <attach command> if given, otherwise
-# "attach-session"
-# Usage: tm_check_attach [<attach command>]
-tm_check_attach()
-{
-  local _attach_cmd=${1:-attach-session}
-  if test -z "${TMUX}" ; then
-    # We are not attached. Run specialized command to do so if given,
-    # otherwise, plain old 'tmux attach'
-    ${TMUX_CMD} ${TMUX_ARGS} ${_attach_cmd}
-  fi
 }
 
 # Return 0 if server already running, else 1
