@@ -103,8 +103,11 @@ tm_check_server()
 tm_start_server()
 {
   tm_check_server && { echo "Attempt to start already running server." >&2 ; return 1 ; }
+  # Allow the following to fail, which it may if we're starting two sessions at the
+  # same time, in which case we have a race condiction that can result in trying to
+  # create the session twice.
   ${TMUX_CMD} ${TMUX_ARGS} new-session -d \
-    -n ${TM_START_WINDOW_NAME} -s ${TM_START_SESSION_NAME}
+    -n ${TM_START_WINDOW_NAME} -s ${TM_START_SESSION_NAME} || true
   tm_check_server || { echo "${TM_START_SERVER_CMD} failed to start server." >&2 ; return 1 ; }
   }
 
