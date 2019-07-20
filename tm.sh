@@ -263,7 +263,13 @@ case ${cmd} in
     ;;
 
   cmd)
-    cmd_cmd ${1:-${TM_DEFAULT_CMD}}
+    if test $# -eq 0 ; then
+      cmd_cmd ${TM_DEFAULT_CMD}
+    else
+      for c in "$@" ; do
+        cmd_cmd ${c}
+      done
+    fi
     ;;
 
   *)
