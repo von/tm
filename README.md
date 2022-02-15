@@ -73,12 +73,14 @@ Command files should be files suitable for use with `tmux source-file`
 with the following special commands (that are comments as far as tmux is
 concerned):
 
- * `#@tm-attach: <tmux command>` If the command is run whn not attached to a
-tmux session the given `tmux command` will be executed.
+ * `#@tm-attach: <tmux command>` When not attached to a tmux session, `tmux
+command` will be executed. If it succeeds (returns zero), the rest of the
+command script is not processed. This is to allow connecting to a session
+before creating it.
 
- * `#@tm-try: <tmux command>` If present, `tmux command` is executed and if
-it succeeds (returns zero) then the rest of the command script is not run. This
-allows for trying to switch to a session before creating it.
+ * `#@tm-try: <tmux command>` When attached to a tmux session, `tmux command`
+is executed and if it succeeds (returns zero) then the rest of the command script
+is not run. This allows for trying to switch to a session before creating it.
 
 Init Script
 ----------
